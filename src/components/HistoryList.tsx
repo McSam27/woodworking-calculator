@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, SectionList, Text, TextInput, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
-import type { CalculationRecord } from "../state/store";
+import type { CalculationRecord, Precision } from "../state/store";
+import { formatImperial, fractionFromDecimal, inchesToMm } from "../lib/math";
 import { timeAgo } from "../lib/time";
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   onDelete: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onSetDescription: (id: string, desc: string) => void;
+  precision: Precision;
 };
 
 const SectionLabel = ({ title }: { title: string }) => (
@@ -38,7 +40,13 @@ const SwipeRow = ({
   );
 };
 
-export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescription }: Props) => {
+export const HistoryList = ({
+  items,
+  onDelete,
+  onToggleFavorite,
+  onSetDescription,
+  precision,
+}: Props) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -68,7 +76,15 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
     setEditValue("");
   };
 
-  const renderItem = (item: CalculationRecord) => (
+  const formatFixed = (value: number, decimals = 2) =>
+    value.toFixed(decimals).replace(/\.?0+$/, "");
+
+  const renderItem = (item: CalculationRecord) => {
+    const inches = item.resultRaw;
+    const frac = fractionFromDecimal(inches, 1000000);
+    const mm = inchesToMm(inches);
+    const cm = mm / 10;
+    return (
     <SwipeRow key={item.id} onDelete={() => onDelete(item.id)}>
       <View className="border-b border-zinc-200 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
         {editingId === item.id ? (
@@ -98,7 +114,7 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
         ) : item.description ? (
           <View className="flex-row items-center gap-2">
             <Pressable onPress={() => startEdit(item)} className="flex-1">
-              <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <Text className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                 {item.description}
               </Text>
             </Pressable>
@@ -107,34 +123,59 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
               hitSlop={8}
               className="rounded-full"
             >
-              <Text className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">Edit</Text>
+              <Text className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">Edit</Text>
             </Pressable>
           </View>
         ) : (
           <Pressable onPress={() => startEdit(item)}>
-            <Text className="text-xs italic text-zinc-500 dark:text-zinc-400">
+            <Text className="text-sm italic text-zinc-500 dark:text-zinc-400">
               Tap to add description...
             </Text>
           </Pressable>
         )}
 
-        <Text className="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400">{item.expression}</Text>
+        <Text className="mt-2 font-mono text-base text-zinc-500 dark:text-zinc-400">
+          {item.expression}
+        </Text>
         <View className="mt-2 flex-row items-center justify-between">
-          <Text className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">
+          <Text className="font-mono text-lg font-semibold text-amber-600 dark:text-amber-400">
             = {item.result}
           </Text>
           <View className="flex-row items-center gap-3">
-            <Text className="text-xs text-zinc-500 dark:text-zinc-400">{timeAgo(item.createdAt)}</Text>
+            <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+              {timeAgo(item.createdAt)}
+            </Text>
             <Pressable onPress={() => onToggleFavorite(item.id)}>
-              <Text className="text-xs font-semibold text-amber-500">
+              <Text className="text-sm font-semibold text-amber-500">
                 {item.isFavorited ? "Fav" : "Set"}
               </Text>
             </Pressable>
           </View>
         </View>
+
+        <View className="mt-3 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-950">
+          <Text className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            Live Conversions
+          </Text>
+          <View className="mt-2 gap-1">
+            <Text className="font-mono text-base text-zinc-700 dark:text-zinc-200">
+              {formatFixed(inches, 3)} in
+            </Text>
+            <Text className="font-mono text-base text-zinc-700 dark:text-zinc-200">
+              {formatImperial(frac, precision)}
+            </Text>
+            <Text className="font-mono text-base text-zinc-700 dark:text-zinc-200">
+              {formatFixed(cm, 2)} cm
+            </Text>
+            <Text className="font-mono text-base text-zinc-700 dark:text-zinc-200">
+              {formatFixed(mm, 2)} mm
+            </Text>
+          </View>
+        </View>
       </View>
     </SwipeRow>
-  );
+    );
+  };
 
   const sections = [
     favorites.length > 0 ? { title: "Favorites", data: favorites } : null,

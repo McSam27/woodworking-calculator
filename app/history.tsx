@@ -29,6 +29,7 @@ export default function HistoryScreen() {
         onDelete={(id) => dispatch({ type: "DELETE", id })}
         onToggleFavorite={(id) => dispatch({ type: "TOGGLE_FAV", id })}
         onSetDescription={(id, desc) => dispatch({ type: "SET_DESC", id, desc })}
+        precision={state.settings.fractionPrecision}
       />
     </SafeAreaView>
   );

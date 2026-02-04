@@ -35,7 +35,7 @@ const div = (a: Fraction, b: Fraction) => {
 
 export const toDecimal = (f: Fraction) => f.num / f.den;
 
-const fractionFromDecimal = (value: number, den = 10000): Fraction =>
+export const fractionFromDecimal = (value: number, den = 10000): Fraction =>
   reduce({ num: Math.round(value * den), den });
 
 const parseFraction = (

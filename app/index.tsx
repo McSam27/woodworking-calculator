@@ -60,7 +60,6 @@ export default function CalculatorScreen() {
   const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
   const [showUnits, setShowUnits] = useState(false);
-  const [showCursor, setShowCursor] = useState(true);
 
   const keys = useMemo(() => {
     if (state.settings.unitSystem === "metric") {
@@ -88,12 +87,6 @@ export default function CalculatorScreen() {
     return () => clearTimeout(timer);
   }, [state.showSaveToast, dispatch]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setShowCursor((prev) => !prev);
-    }, 550);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleKey = (k: string) => {
     if (k === "C") dispatch({ type: "CLEAR" });
@@ -166,14 +159,30 @@ export default function CalculatorScreen() {
         </Pressable>
       </View>
 
+      <View className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <Pressable
+          onPress={() => setShowHistory(true)}
+          className="flex-row items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            History
+          </Text>
+          {state.history.length > 0 && (
+            <View className="rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950">
+              <Text className="text-xs font-bold text-amber-700 dark:text-amber-200">
+                {state.history.length}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+
       <View className="min-h-[110px] justify-end bg-white px-4 py-4 dark:bg-zinc-900">
         <View className="min-h-[28px] flex-row flex-wrap items-center">
           {state.expr ? (
-            <Text className="font-mono text-xl text-zinc-500 dark:text-zinc-400">
+            <Text className="font-mono text-2xl text-zinc-800 dark:text-zinc-200">
               {state.expr}
-              {showCursor && !state.result && (
-                <Text className="text-zinc-400 dark:text-zinc-500">|</Text>
-              )}
+              {!state.result && <Text className="text-zinc-600 dark:text-zinc-400">|</Text>}
             </Text>
           ) : (
             <Text className="text-base text-zinc-400 dark:text-zinc-600">
@@ -253,24 +262,6 @@ export default function CalculatorScreen() {
         ))}
       </View>
 
-      <View className="border-t border-zinc-200 px-3 py-3 dark:border-zinc-800">
-        <Pressable
-          onPress={() => setShowHistory(true)}
-          className="flex-row items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 dark:border-zinc-800 dark:bg-zinc-900"
-        >
-          <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            History
-          </Text>
-          {state.history.length > 0 && (
-            <View className="rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950">
-              <Text className="text-xs font-bold text-amber-700 dark:text-amber-200">
-                {state.history.length}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-      </View>
-
       <Modal transparent visible={showHistory} animationType="slide">
         <Pressable
           onPress={() => setShowHistory(false)}
@@ -298,6 +289,7 @@ export default function CalculatorScreen() {
               onDelete={(id) => dispatch({ type: "DELETE", id })}
               onToggleFavorite={(id) => dispatch({ type: "TOGGLE_FAV", id })}
               onSetDescription={(id, desc) => dispatch({ type: "SET_DESC", id, desc })}
+              precision={state.settings.fractionPrecision}
             />
           </Pressable>
         </Pressable>
