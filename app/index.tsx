@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useCalculator } from "../src/state/store";
 import { HistoryList } from "../src/components/HistoryList";
 
@@ -151,30 +152,30 @@ export default function CalculatorScreen() {
             </Text>
           </Pressable>
         </View>
-        <Pressable
-          onPress={() => router.push("/settings")}
-          className="h-9 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950"
-        >
-          <Text className="text-xs font-semibold text-amber-800 dark:text-amber-200">User</Text>
-        </Pressable>
-      </View>
-
-      <View className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <Pressable
-          onPress={() => setShowHistory(true)}
-          className="flex-row items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 dark:border-zinc-800 dark:bg-zinc-900"
-        >
-          <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            History
-          </Text>
-          {state.history.length > 0 && (
-            <View className="rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950">
-              <Text className="text-xs font-bold text-amber-700 dark:text-amber-200">
-                {state.history.length}
-              </Text>
-            </View>
-          )}
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => setShowHistory(true)}
+            className="relative h-9 flex-row items-center gap-2 rounded-full bg-amber-100 px-3 dark:bg-amber-950"
+          >
+            <Ionicons name="arrow-undo-circle-outline" size={18} color="#b45309" />
+            <Text className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+              History
+            </Text>
+            {state.history.length > 0 && (
+              <View className="absolute -right-1 -top-1 min-w-[16px] items-center justify-center rounded-full bg-amber-600 px-1 py-0.5">
+                <Text className="text-[9px] font-bold text-white">
+                  {state.history.length}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/settings")}
+            className="h-9 w-9 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950"
+          >
+            <Ionicons name="settings-outline" size={18} color="#b45309" />
+          </Pressable>
+        </View>
       </View>
 
       <View className="min-h-[110px] justify-end bg-white px-4 py-4 dark:bg-zinc-900">
