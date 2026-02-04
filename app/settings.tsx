@@ -69,6 +69,27 @@ const PrecisionButton = ({
   </Pressable>
 );
 
+const ThemeButton = ({
+  value,
+  selected,
+  onPress,
+}: {
+  value: "light" | "dark" | "system";
+  selected: boolean;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={onPress}
+    className={`rounded-full px-3 py-1 ${
+      selected ? "bg-amber-600" : "bg-zinc-100 dark:bg-zinc-800"
+    }`}
+  >
+    <Text className={`text-xs font-semibold ${selected ? "text-white" : "text-zinc-700 dark:text-zinc-200"}`}>
+      {value === "system" ? "System" : value === "light" ? "Light" : "Dark"}
+    </Text>
+  </Pressable>
+);
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { state, dispatch } = useCalculator();
@@ -87,18 +108,19 @@ export default function SettingsScreen() {
         <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Settings</Text>
       </View>
 
-      <Section title="Account">
-        <View className="flex-row items-center gap-4 px-5 py-4">
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950">
-            <Text className="text-lg">👤</Text>
+      <Section title="General">
+        <Row label="Theme" sub="Choose light, dark, or system">
+          <View className="flex-row flex-wrap gap-2">
+            {(["light", "dark", "system"] as const).map((value) => (
+              <ThemeButton
+                key={value}
+                value={value}
+                selected={state.settings.theme === value}
+                onPress={() => dispatch({ type: "SET_SETTING", key: "theme", val: value })}
+              />
+            ))}
           </View>
-          <View>
-            <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              Sign in to sync measurements
-            </Text>
-            <Text className="mt-1 text-xs font-semibold text-amber-600">Coming soon</Text>
-          </View>
-        </View>
+        </Row>
       </Section>
 
       <Section title="Calculator">
@@ -147,18 +169,6 @@ export default function SettingsScreen() {
             ))}
           </View>
         </Row>
-        <Row label="Enable unit conversion" sub="Show ⇄ button to convert results">
-          <Toggle
-            value={state.settings.unitConversionEnabled}
-            onToggle={() =>
-              dispatch({
-                type: "SET_SETTING",
-                key: "unitConversionEnabled",
-                val: !state.settings.unitConversionEnabled,
-              })
-            }
-          />
-        </Row>
       </Section>
 
       <Section title="Data">
@@ -169,7 +179,7 @@ export default function SettingsScreen() {
               className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950"
             >
               <Text className="text-center text-sm font-semibold text-red-600 dark:text-red-300">
-                Clear All History
+                Clear Measurement History
               </Text>
             </Pressable>
           ) : (

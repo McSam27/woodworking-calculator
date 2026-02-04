@@ -266,15 +266,5 @@ export const formatResult = (
   metricUnit: MetricUnit = "mm"
 ) => (unitSystem === "imperial" ? formatImperial(frac, precision) : formatMetric(frac, metricUnit));
 
-export const formatConverted = (
-  frac: Fraction,
-  fromUnit: UnitSystem,
-  precision: number,
-  metricUnit: MetricUnit = "mm"
-) => {
-  if (fromUnit === "imperial") return formatMetric(frac, metricUnit);
-  return formatImperial(frac, precision);
-};
-
 export const inchesToMm = (inches: number) => inches * MM_PER_INCH;
 export const mmToInches = (mm: number) => mm / MM_PER_INCH;

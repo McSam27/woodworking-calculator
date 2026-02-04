@@ -15,16 +15,33 @@ const KeyButton = ({
   variant?: "default" | "op" | "eq" | "danger";
 }) => {
   const base =
-    "flex-1 items-center justify-center rounded-xl py-4 text-lg font-semibold";
-  const variants: Record<typeof variant, string> = {
-    default: "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100",
-    op: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100",
-    eq: "bg-amber-600 text-white",
-    danger: "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-300",
+    "flex-1 items-center justify-center rounded-xl py-4";
+  const variants: Record<
+    typeof variant,
+    { container: string; text: string }
+  > = {
+    default: {
+      container: "bg-zinc-100 dark:bg-zinc-800",
+      text: "text-zinc-900 dark:text-zinc-100",
+    },
+    op: {
+      container: "bg-amber-100 dark:bg-amber-950",
+      text: "text-amber-900 dark:text-amber-100",
+    },
+    eq: { container: "bg-amber-600", text: "text-white" },
+    danger: {
+      container: "bg-red-100 dark:bg-red-950",
+      text: "text-red-700 dark:text-red-200",
+    },
   };
   return (
-    <Pressable onPress={onPress} className={`${base} ${variants[variant]}`}>
-      <Text className="text-2xl font-semibold">{label}</Text>
+    <Pressable
+      onPress={onPress}
+      className={`${base} ${variants[variant].container}`}
+    >
+      <Text className={`text-2xl font-semibold ${variants[variant].text}`}>
+        {label}
+      </Text>
     </Pressable>
   );
 };
@@ -33,7 +50,6 @@ const SaveToast = ({ show }: { show: boolean }) => {
   if (!show) return null;
   return (
     <View className="absolute left-1/2 top-14 z-50 -translate-x-1/2 flex-row items-center gap-2 rounded-full bg-emerald-700 px-4 py-2 shadow">
-      <Text className="text-base text-emerald-100">✓</Text>
       <Text className="text-xs font-semibold text-emerald-100">Saved</Text>
     </View>
   );
@@ -44,24 +60,40 @@ export default function CalculatorScreen() {
   const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
   const [showUnits, setShowUnits] = useState(false);
+  const [showCursor, setShowCursor] = useState(true);
 
-  const keys = useMemo(
-    () => [
+  const keys = useMemo(() => {
+    if (state.settings.unitSystem === "metric") {
+      return [
+        ["C", "⌫", "()", "÷"],
+        ["7", "8", "9", "×"],
+        ["4", "5", "6", "−"],
+        ["1", "2", "3", "+"],
+        ["", "0", ".", "="],
+      ];
+    }
+    return [
       ["C", "⌫", "()", "÷"],
       ["7", "8", "9", "×"],
       ["4", "5", "6", "−"],
       ["1", "2", "3", "+"],
       ["0", "'", "\"", "="],
-    ],
-    []
-  );
-  const fractionKeys = ["1/2", "1/4", "1/8", "1/16", "/", "␣"];
+    ];
+  }, [state.settings.unitSystem]);
+  const fractionKeys = ["1/2", "1/4", "1/8", "1/16", "/", "Space"];
 
   useEffect(() => {
     if (!state.showSaveToast) return;
     const timer = setTimeout(() => dispatch({ type: "HIDE_TOAST" }), 1500);
     return () => clearTimeout(timer);
   }, [state.showSaveToast, dispatch]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setShowCursor((prev) => !prev);
+    }, 550);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleKey = (k: string) => {
     if (k === "C") dispatch({ type: "CLEAR" });
@@ -77,7 +109,7 @@ export default function CalculatorScreen() {
   };
 
   const handleFraction = (value: string) => {
-    if (value === "␣") {
+    if (value === "Space") {
       dispatch({ type: "INPUT", val: " " });
       return;
     }
@@ -90,8 +122,7 @@ export default function CalculatorScreen() {
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
   };
 
-  const unitLabel =
-    state.settings.unitSystem === "imperial" ? "ft-in" : state.metricDisplayUnit;
+  const unitLabel = state.settings.unitSystem === "imperial" ? "ft-in" : "mm/cm";
 
   const unitOptions = [
     { key: "imperial", label: "Imperial", sub: "ft-in" },
@@ -105,27 +136,27 @@ export default function CalculatorScreen() {
 
       <View className="flex-row items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <View className="flex-row items-center gap-2">
-          <Text className="text-lg font-bold text-amber-600">◉</Text>
+          <Text className="text-lg font-bold text-amber-600">•</Text>
           <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             WoodCalc
           </Text>
           <Pressable
             onPress={() => setShowUnits(true)}
-            className="flex-row items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950"
+            className="flex-row items-center gap-1 rounded-full bg-amber-100 px-3 py-1 dark:bg-amber-950"
           >
-            <Text className="text-[10px] font-semibold text-amber-700 dark:text-amber-200">
+            <Text className="text-xs font-semibold text-amber-700 dark:text-amber-200">
               {unitLabel}
             </Text>
-            <Text className="text-[10px] font-semibold text-amber-700 dark:text-amber-200">
+            <Text className="text-xs font-semibold text-amber-700 dark:text-amber-200">
               ▾
             </Text>
           </Pressable>
         </View>
         <Pressable
           onPress={() => router.push("/settings")}
-          className="h-9 w-9 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950"
+          className="h-9 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950"
         >
-          <Text className="text-base">👤</Text>
+          <Text className="text-xs font-semibold text-amber-800 dark:text-amber-200">User</Text>
         </Pressable>
       </View>
 
@@ -134,6 +165,9 @@ export default function CalculatorScreen() {
           {state.expr ? (
             <Text className="font-mono text-xl text-zinc-500 dark:text-zinc-400">
               {state.expr}
+              {showCursor && !state.result && (
+                <Text className="text-zinc-400 dark:text-zinc-500">|</Text>
+              )}
             </Text>
           ) : (
             <Text className="text-base text-zinc-400 dark:text-zinc-600">
@@ -155,34 +189,10 @@ export default function CalculatorScreen() {
             {!state.error && state.settings.unitSystem === "metric" && (
               <View className="rounded-full bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800">
                 <Text className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">
-                  {state.metricDisplayUnit.toUpperCase()}
+                  Metric
                 </Text>
               </View>
             )}
-            {state.settings.unitConversionEnabled &&
-              !state.error &&
-              state.resultFrac && (
-                <Pressable
-                  onPress={() => dispatch({ type: "CONVERT" })}
-                  className={`rounded-lg px-3 py-1.5 ${
-                    state.resultConverted
-                      ? "bg-amber-600"
-                      : "bg-amber-100 dark:bg-amber-950"
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-bold ${
-                      state.resultConverted
-                        ? "text-white"
-                        : "text-amber-700 dark:text-amber-200"
-                    }`}
-                  >
-                    {state.settings.unitSystem === "metric"
-                      ? state.metricDisplayUnit.toUpperCase()
-                      : "⇄"}
-                  </Text>
-                </Pressable>
-              )}
           </View>
         )}
         {state.result &&
@@ -194,7 +204,7 @@ export default function CalculatorScreen() {
                 onPress={() => dispatch({ type: "SAVE_MANUAL" })}
                 className="rounded-lg bg-amber-600 px-4 py-2"
               >
-                <Text className="text-xs font-semibold text-white">💾 Save</Text>
+                <Text className="text-xs font-semibold text-white">Save</Text>
               </Pressable>
             </View>
           )}
@@ -217,7 +227,10 @@ export default function CalculatorScreen() {
       <View className="flex-1 gap-2 px-3 pb-2">
         {keys.map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} className="flex-1 flex-row gap-2">
-            {row.map((key) => {
+            {row.map((key, idx) => {
+              if (!key) {
+                return <View key={`spacer-${idx}`} className="flex-1" />;
+              }
               const isOp = ["÷", "×", "−", "+"].includes(key);
               const isEq = key === "=";
               const isDanger = key === "C" || key === "⌫";
@@ -240,7 +253,7 @@ export default function CalculatorScreen() {
           className="flex-row items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            📋 History
+            History
           </Text>
           {state.history.length > 0 && (
             <View className="rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950">
@@ -325,7 +338,7 @@ export default function CalculatorScreen() {
                   </View>
                   {selected && (
                     <Text className="text-xs font-semibold text-amber-700 dark:text-amber-200">
-                      ✓
+                      Selected
                     </Text>
                   )}
                 </Pressable>

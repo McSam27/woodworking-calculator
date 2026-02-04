@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import type { CalculationRecord } from "../state/store";
 import { timeAgo } from "../lib/time";
@@ -81,38 +81,41 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
               autoFocus
               maxLength={60}
               className="flex-1 rounded-lg border border-amber-500 bg-white px-3 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
-              style={{ height: 36, lineHeight: 20 }}
+              style={{
+                height: 40,
+                lineHeight: 20,
+                textAlignVertical: "center",
+                paddingVertical: Platform.OS === "ios" ? 8 : 0,
+              }}
             />
             <Pressable onPress={() => saveEdit(item.id)} className="rounded-lg bg-amber-600 px-3 py-2">
               <Text className="text-xs font-semibold text-white">Save</Text>
             </Pressable>
             <Pressable onPress={cancelEdit} className="rounded-lg bg-zinc-200 px-3 py-2 dark:bg-zinc-800">
-              <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">✕</Text>
+              <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">X</Text>
+            </Pressable>
+          </View>
+        ) : item.description ? (
+          <View className="flex-row items-center gap-2">
+            <Pressable onPress={() => startEdit(item)} className="flex-1">
+              <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                {item.description}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => startEdit(item)}
+              hitSlop={8}
+              className="rounded-full"
+            >
+              <Text className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">Edit</Text>
             </Pressable>
           </View>
         ) : (
-          {item.description ? (
-            <View className="flex-row items-center gap-2">
-              <Pressable onPress={() => startEdit(item)} className="flex-1">
-                <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {item.description}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => startEdit(item)}
-                hitSlop={8}
-                className="rounded-full"
-              >
-                <Text className="text-base text-zinc-400 dark:text-zinc-500">✎</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable onPress={() => startEdit(item)}>
-              <Text className="text-xs italic text-zinc-500 dark:text-zinc-400">
-                Tap to add description...
-              </Text>
-            </Pressable>
-          )}
+          <Pressable onPress={() => startEdit(item)}>
+            <Text className="text-xs italic text-zinc-500 dark:text-zinc-400">
+              Tap to add description...
+            </Text>
+          </Pressable>
         )}
 
         <Text className="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400">{item.expression}</Text>
@@ -123,8 +126,8 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
           <View className="flex-row items-center gap-3">
             <Text className="text-xs text-zinc-500 dark:text-zinc-400">{timeAgo(item.createdAt)}</Text>
             <Pressable onPress={() => onToggleFavorite(item.id)}>
-              <Text className="text-lg text-amber-500">
-                {item.isFavorited ? "★" : "☆"}
+              <Text className="text-xs font-semibold text-amber-500">
+                {item.isFavorited ? "Fav" : "Set"}
               </Text>
             </Pressable>
           </View>
@@ -136,7 +139,6 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
   if (items.length === 0) {
     return (
       <View className="items-center justify-center px-6 py-16">
-        <Text className="text-4xl opacity-50">📐</Text>
         <Text className="mt-3 text-base font-semibold text-zinc-700 dark:text-zinc-200">
           No measurements yet
         </Text>

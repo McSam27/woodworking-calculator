@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   evaluateExpression,
-  formatConverted,
   formatResult,
   toDecimal,
   type Fraction,
@@ -28,8 +27,7 @@ export type Settings = {
   autoSave: boolean;
   unitSystem: UnitSystem;
   fractionPrecision: Precision;
-  unitConversionEnabled: boolean;
-  theme: "system";
+  theme: "system" | "light" | "dark";
 };
 
 type State = {
@@ -37,10 +35,6 @@ type State = {
   result: string | null;
   error: string | null;
   resultFrac: Fraction | null;
-  resultOriginalUnit: UnitSystem | null;
-  resultConverted: boolean;
-  metricDisplayUnit: MetricUnit;
-  metricInputUnit: MetricUnit;
   history: CalculationRecord[];
   settings: Settings;
   lastEntry: CalculationRecord | null;
@@ -59,7 +53,6 @@ type Action =
   | { type: "CLEAR_ALL" }
   | { type: "SET_DESC"; id: string; desc: string }
   | { type: "SET_SETTING"; key: keyof Settings; val: Settings[keyof Settings] }
-  | { type: "CONVERT" }
   | { type: "LOAD_STATE"; history: CalculationRecord[]; settings: Settings };
 
 const SETTINGS_KEY = "woodcalc_settings";
@@ -71,7 +64,6 @@ const initialSettings: Settings = {
   autoSave: true,
   unitSystem: "imperial",
   fractionPrecision: 16,
-  unitConversionEnabled: false,
   theme: "system",
 };
 
@@ -80,10 +72,6 @@ const initialState: State = {
   result: null,
   error: null,
   resultFrac: null,
-  resultOriginalUnit: null,
-  resultConverted: false,
-  metricDisplayUnit: "mm",
-  metricInputUnit: "mm",
   history: [],
   settings: initialSettings,
   lastEntry: null,
@@ -99,7 +87,6 @@ const reducer = (state: State, action: Action): State => {
         result: null,
         error: null,
         resultFrac: null,
-        resultConverted: false,
         showSaveToast: false,
       };
     case "CLEAR":
@@ -109,7 +96,6 @@ const reducer = (state: State, action: Action): State => {
         result: null,
         error: null,
         resultFrac: null,
-        resultConverted: false,
         lastEntry: null,
         showSaveToast: false,
       };
@@ -131,18 +117,16 @@ const reducer = (state: State, action: Action): State => {
           result: message,
           error: message,
           resultFrac: null,
-          resultConverted: false,
         };
       }
       const frac = evaluation.value;
-      const metricInputUnit: MetricUnit =
+      const metricUnit: MetricUnit =
         state.settings.unitSystem === "metric" && /cm\b/i.test(state.expr) ? "cm" : "mm";
-      const metricDisplayUnit = state.settings.unitSystem === "metric" ? metricInputUnit : "mm";
       const formatted = formatResult(
         frac,
         state.settings.unitSystem,
         state.settings.fractionPrecision,
-        metricDisplayUnit
+        metricUnit
       );
       const now = new Date().toISOString();
       const entry: CalculationRecord = {
@@ -162,10 +146,6 @@ const reducer = (state: State, action: Action): State => {
           result: formatted,
           error: null,
           resultFrac: frac,
-          resultOriginalUnit: state.settings.unitSystem,
-          resultConverted: false,
-          metricDisplayUnit,
-          metricInputUnit,
           history: [entry, ...state.history],
           lastEntry: null,
           showSaveToast: true,
@@ -176,10 +156,6 @@ const reducer = (state: State, action: Action): State => {
         result: formatted,
         error: null,
         resultFrac: frac,
-        resultOriginalUnit: state.settings.unitSystem,
-        resultConverted: false,
-        metricDisplayUnit,
-        metricInputUnit,
         lastEntry: entry,
         showSaveToast: false,
       };
@@ -214,40 +190,6 @@ const reducer = (state: State, action: Action): State => {
       };
     case "SET_SETTING":
       return { ...state, settings: { ...state.settings, [action.key]: action.val } };
-    case "CONVERT": {
-      if (!state.resultFrac || state.error || !state.resultOriginalUnit) return state;
-      if (state.resultOriginalUnit === "metric") {
-        const nextUnit: MetricUnit = state.metricDisplayUnit === "mm" ? "cm" : "mm";
-        const converted = formatResult(
-          state.resultFrac,
-          "metric",
-          state.settings.fractionPrecision,
-          nextUnit
-        );
-        return {
-          ...state,
-          result: converted,
-          metricDisplayUnit: nextUnit,
-          resultConverted: nextUnit !== state.metricInputUnit,
-        };
-      }
-      if (!state.resultConverted) {
-        const converted = formatConverted(
-          state.resultFrac,
-          state.resultOriginalUnit,
-          state.settings.fractionPrecision,
-          state.metricDisplayUnit
-        );
-        return { ...state, result: converted, resultConverted: true };
-      }
-      const original = formatResult(
-        state.resultFrac,
-        state.resultOriginalUnit,
-        state.settings.fractionPrecision,
-        state.metricDisplayUnit
-      );
-      return { ...state, result: original, resultConverted: false };
-    }
     case "LOAD_STATE":
       return { ...state, history: action.history, settings: action.settings };
     default:
@@ -273,7 +215,12 @@ export const CalculatorProvider = ({ children }: { children: React.ReactNode }) 
           AsyncStorage.getItem(SETTINGS_KEY),
           AsyncStorage.getItem(HISTORY_KEY),
         ]);
-        const settings = settingsRaw ? (JSON.parse(settingsRaw) as Settings) : initialSettings;
+        const parsed = settingsRaw ? (JSON.parse(settingsRaw) as Settings) : initialSettings;
+        const settings: Settings = {
+          ...initialSettings,
+          ...parsed,
+          theme: parsed?.theme ?? initialSettings.theme,
+        };
         const history = historyRaw ? (JSON.parse(historyRaw) as CalculationRecord[]) : [];
         dispatch({ type: "LOAD_STATE", history, settings });
       } catch {
