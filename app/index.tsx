@@ -15,7 +15,7 @@ const KeyButton = ({
   variant?: "default" | "op" | "eq" | "danger";
 }) => {
   const base =
-    "flex-1 items-center justify-center rounded-xl py-4";
+    "flex-1 items-center justify-center rounded-xl py-8";
   const variants: Record<
     typeof variant,
     { container: string; text: string }
@@ -39,7 +39,7 @@ const KeyButton = ({
       onPress={onPress}
       className={`${base} ${variants[variant].container}`}
     >
-      <Text className={`text-2xl font-semibold ${variants[variant].text}`}>
+      <Text className={`text-4xl font-semibold ${variants[variant].text}`}>
         {label}
       </Text>
     </Pressable>
@@ -221,9 +221,9 @@ export default function CalculatorScreen() {
           <Pressable
             key={key}
             onPress={() => handleFraction(key)}
-            className="flex-1 rounded-lg bg-amber-100 py-2 dark:bg-amber-950"
+            className="flex-1 rounded-lg bg-amber-100 py-3 dark:bg-amber-950"
           >
-            <Text className="text-center text-xs font-semibold text-amber-800 dark:text-amber-200">
+            <Text className="text-center text-sm font-semibold text-amber-800 dark:text-amber-200">
               {key}
             </Text>
           </Pressable>
@@ -322,6 +322,7 @@ export default function CalculatorScreen() {
                   key={option.key}
                   onPress={() => {
                     dispatch({ type: "SET_SETTING", key: "unitSystem", val: option.key });
+                    dispatch({ type: "CLEAR" });
                     setShowUnits(false);
                   }}
                   className={`flex-row items-center justify-between rounded-xl px-2 py-2 ${
