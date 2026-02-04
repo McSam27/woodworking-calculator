@@ -1,6 +1,7 @@
 export type Fraction = { num: number; den: number };
 
 export type UnitSystem = "imperial" | "metric";
+export type MetricUnit = "mm" | "cm";
 
 const INCHES_PER_FOOT = 12;
 const MM_PER_INCH = 25.4;
@@ -37,12 +38,18 @@ export const toDecimal = (f: Fraction) => f.num / f.den;
 const fractionFromDecimal = (value: number, den = 10000): Fraction =>
   reduce({ num: Math.round(value * den), den });
 
-const parseFraction = (value: string): Fraction | null => {
+const parseFraction = (
+  value: string,
+  onError?: (message: string) => void
+): Fraction | null => {
   const trimmed = value.trim();
   if (!trimmed) return null;
   if (trimmed.includes("/")) {
     const [n, d] = trimmed.split("/").map(Number);
-    if (!d || Number.isNaN(n) || Number.isNaN(d)) return null;
+    if (!d || Number.isNaN(n) || Number.isNaN(d)) {
+      onError?.("Invalid fraction input");
+      return null;
+    }
     return reduce({ num: n, den: d });
   }
   const num = Number(trimmed);
@@ -51,7 +58,10 @@ const parseFraction = (value: string): Fraction | null => {
   return fractionFromDecimal(num);
 };
 
-const parseImperialValue = (raw: string): Fraction | null => {
+const parseImperialValue = (
+  raw: string,
+  onError?: (message: string) => void
+): Fraction | null => {
   const clean = raw.trim();
   if (!clean) return null;
   let total: Fraction = { num: 0, den: 1 };
@@ -66,7 +76,7 @@ const parseImperialValue = (raw: string): Fraction | null => {
   if (inchPart.includes("-") && inchPart.includes("/")) {
     const dash = inchPart.indexOf("-");
     const whole = parseInt(inchPart.slice(0, dash), 10);
-    const frac = parseFraction(inchPart.slice(dash + 1));
+    const frac = parseFraction(inchPart.slice(dash + 1), onError);
     if (!Number.isNaN(whole) && frac) {
       total = add(total, add({ num: whole, den: 1 }, frac));
     } else if (frac) {
@@ -75,14 +85,14 @@ const parseImperialValue = (raw: string): Fraction | null => {
   } else if (inchPart.includes(" ") && inchPart.includes("/")) {
     const space = inchPart.lastIndexOf(" ");
     const whole = parseInt(inchPart.slice(0, space).trim(), 10);
-    const frac = parseFraction(inchPart.slice(space + 1).trim());
+    const frac = parseFraction(inchPart.slice(space + 1).trim(), onError);
     if (!Number.isNaN(whole) && frac) {
       total = add(total, add({ num: whole, den: 1 }, frac));
     } else if (frac) {
       total = add(total, frac);
     }
   } else if (inchPart.includes("/")) {
-    const frac = parseFraction(inchPart);
+    const frac = parseFraction(inchPart, onError);
     if (frac) total = add(total, frac);
   } else {
     const whole = parseInt(inchPart, 10);
@@ -93,10 +103,17 @@ const parseImperialValue = (raw: string): Fraction | null => {
 };
 
 const parseMetricValue = (raw: string): Fraction | null => {
-  const clean = raw.trim().replace(/[^\d.+-]/g, "");
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) return null;
+
+  const unitMatch = trimmed.match(/(mm|cm)\s*$/);
+  const unit = (unitMatch?.[1] ?? "mm") as MetricUnit;
+  const clean = trimmed.replace(/(mm|cm)\s*$/, "").replace(/[^\d.+-]/g, "");
   if (!clean) return null;
-  const mm = Number(clean);
-  if (Number.isNaN(mm)) return null;
+
+  const value = Number(clean);
+  if (Number.isNaN(value)) return null;
+  const mm = unit === "cm" ? value * 10 : value;
   const inches = mm / MM_PER_INCH;
   return fractionFromDecimal(inches);
 };
@@ -127,13 +144,16 @@ const tokenize = (expr: string): Token[] => {
   return tokens;
 };
 
+export type EvalResult = { value: Fraction | null; error: string | null };
+
 export const evaluateExpression = (
   expr: string,
   unitSystem: UnitSystem
-): Fraction | null => {
+): EvalResult => {
   const tokens = tokenize(expr);
-  if (tokens.length === 0) return null;
+  if (tokens.length === 0) return { value: null, error: "Enter a valid expression" };
   let pos = 0;
+  let error: string | null = null;
   const peek = () => tokens[pos];
   const consume = () => tokens[pos++];
 
@@ -150,7 +170,9 @@ export const evaluateExpression = (
     if (t.type === "val") {
       consume();
       return unitSystem === "imperial"
-        ? parseImperialValue(t.raw)
+        ? parseImperialValue(t.raw, (message) => {
+            error ??= message;
+          })
         : parseMetricValue(t.raw);
     }
     return null;
@@ -171,6 +193,10 @@ export const evaluateExpression = (
       else if (op === "-" || op === "−") left = sub(left, right);
       else if (op === "×") left = mul(left, right);
       else if (op === "÷") {
+        if (right.num === 0) {
+          error = "Cannot divide by zero";
+          return null;
+        }
         const divided = div(left, right);
         if (!divided) return null;
         left = divided;
@@ -180,8 +206,9 @@ export const evaluateExpression = (
   };
 
   const result = parseExpr(0);
-  if (!result) return null;
-  return pos >= tokens.length ? result : null;
+  if (!result) return { value: null, error: error ?? "Enter a valid expression" };
+  if (pos < tokens.length) return { value: null, error: "Enter a valid expression" };
+  return { value: result, error: null };
 };
 
 const formatDecimal = (value: number, maxDecimals: number) => {
@@ -225,24 +252,27 @@ export const formatImperial = (frac: Fraction, precision: number) => {
   return `${sign}${parts.join(" ")}`.trim();
 };
 
-export const formatMetric = (frac: Fraction) => {
+export const formatMetric = (frac: Fraction, unit: MetricUnit = "mm") => {
   const inches = toDecimal(frac);
   const mm = inches * MM_PER_INCH;
-  return `${formatDecimal(mm, 4)} mm`;
+  const value = unit === "cm" ? mm / 10 : mm;
+  return `${formatDecimal(value, 4)} ${unit}`;
 };
 
 export const formatResult = (
   frac: Fraction,
   unitSystem: UnitSystem,
-  precision: number
-) => (unitSystem === "imperial" ? formatImperial(frac, precision) : formatMetric(frac));
+  precision: number,
+  metricUnit: MetricUnit = "mm"
+) => (unitSystem === "imperial" ? formatImperial(frac, precision) : formatMetric(frac, metricUnit));
 
 export const formatConverted = (
   frac: Fraction,
   fromUnit: UnitSystem,
-  precision: number
+  precision: number,
+  metricUnit: MetricUnit = "mm"
 ) => {
-  if (fromUnit === "imperial") return formatMetric(frac);
+  if (fromUnit === "imperial") return formatMetric(frac, metricUnit);
   return formatImperial(frac, precision);
 };
 

@@ -84,7 +84,8 @@ export default function CalculatorScreen() {
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
   };
 
-  const unitLabel = state.settings.unitSystem === "imperial" ? "ft-in" : "mm";
+  const unitLabel =
+    state.settings.unitSystem === "imperial" ? "ft-in" : state.metricDisplayUnit;
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-zinc-950">
@@ -127,15 +128,22 @@ export default function CalculatorScreen() {
           <View className="mt-2 flex-row items-center justify-end gap-2">
             <Text
               className={`font-mono text-2xl font-bold ${
-                state.result === "Error"
+                state.error
                   ? "text-red-500"
                   : "text-amber-600 dark:text-amber-400"
               }`}
             >
               = {state.result}
             </Text>
+            {!state.error && state.settings.unitSystem === "metric" && (
+              <View className="rounded-full bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800">
+                <Text className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  {state.metricDisplayUnit.toUpperCase()}
+                </Text>
+              </View>
+            )}
             {state.settings.unitConversionEnabled &&
-              state.result !== "Error" &&
+              !state.error &&
               state.resultFrac && (
                 <Pressable
                   onPress={() => dispatch({ type: "CONVERT" })}
@@ -152,14 +160,16 @@ export default function CalculatorScreen() {
                         : "text-amber-700 dark:text-amber-200"
                     }`}
                   >
-                    ⇄
+                    {state.settings.unitSystem === "metric"
+                      ? state.metricDisplayUnit.toUpperCase()
+                      : "⇄"}
                   </Text>
                 </Pressable>
               )}
           </View>
         )}
         {state.result &&
-          state.result !== "Error" &&
+          !state.error &&
           !state.settings.autoSave &&
           state.lastEntry && (
             <View className="mt-2 flex-row justify-end">

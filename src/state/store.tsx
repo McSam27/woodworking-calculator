@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { evaluateExpression, formatConverted, formatResult, toDecimal, type Fraction, type UnitSystem } from "../lib/math";
+import {
+  evaluateExpression,
+  formatConverted,
+  formatResult,
+  toDecimal,
+  type Fraction,
+  type MetricUnit,
+  type UnitSystem,
+} from "../lib/math";
 
 export type Precision = 2 | 4 | 8 | 16 | 32;
 
@@ -27,9 +35,12 @@ export type Settings = {
 type State = {
   expr: string;
   result: string | null;
+  error: string | null;
   resultFrac: Fraction | null;
   resultOriginalUnit: UnitSystem | null;
   resultConverted: boolean;
+  metricDisplayUnit: MetricUnit;
+  metricInputUnit: MetricUnit;
   history: CalculationRecord[];
   settings: Settings;
   lastEntry: CalculationRecord | null;
@@ -67,9 +78,12 @@ const initialSettings: Settings = {
 const initialState: State = {
   expr: "",
   result: null,
+  error: null,
   resultFrac: null,
   resultOriginalUnit: null,
   resultConverted: false,
+  metricDisplayUnit: "mm",
+  metricInputUnit: "mm",
   history: [],
   settings: initialSettings,
   lastEntry: null,
@@ -83,6 +97,7 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         expr: state.expr + action.val,
         result: null,
+        error: null,
         resultFrac: null,
         resultConverted: false,
         showSaveToast: false,
@@ -92,20 +107,43 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         expr: "",
         result: null,
+        error: null,
         resultFrac: null,
         resultConverted: false,
         lastEntry: null,
         showSaveToast: false,
       };
     case "BACKSPACE":
-      return { ...state, expr: state.expr.slice(0, -1), result: null, showSaveToast: false };
+      return {
+        ...state,
+        expr: state.expr.slice(0, -1),
+        result: null,
+        error: null,
+        showSaveToast: false,
+      };
     case "EVAL": {
       if (!state.expr.trim()) return state;
-      const frac = evaluateExpression(state.expr, state.settings.unitSystem);
-      if (!frac) {
-        return { ...state, result: "Error", resultFrac: null, resultConverted: false };
+      const evaluation = evaluateExpression(state.expr, state.settings.unitSystem);
+      if (!evaluation.value) {
+        const message = evaluation.error ?? "Enter a valid expression";
+        return {
+          ...state,
+          result: message,
+          error: message,
+          resultFrac: null,
+          resultConverted: false,
+        };
       }
-      const formatted = formatResult(frac, state.settings.unitSystem, state.settings.fractionPrecision);
+      const frac = evaluation.value;
+      const metricInputUnit: MetricUnit =
+        state.settings.unitSystem === "metric" && /cm\b/i.test(state.expr) ? "cm" : "mm";
+      const metricDisplayUnit = state.settings.unitSystem === "metric" ? metricInputUnit : "mm";
+      const formatted = formatResult(
+        frac,
+        state.settings.unitSystem,
+        state.settings.fractionPrecision,
+        metricDisplayUnit
+      );
       const now = new Date().toISOString();
       const entry: CalculationRecord = {
         id: uuid(),
@@ -122,9 +160,12 @@ const reducer = (state: State, action: Action): State => {
         return {
           ...state,
           result: formatted,
+          error: null,
           resultFrac: frac,
           resultOriginalUnit: state.settings.unitSystem,
           resultConverted: false,
+          metricDisplayUnit,
+          metricInputUnit,
           history: [entry, ...state.history],
           lastEntry: null,
           showSaveToast: true,
@@ -133,9 +174,12 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         result: formatted,
+        error: null,
         resultFrac: frac,
         resultOriginalUnit: state.settings.unitSystem,
         resultConverted: false,
+        metricDisplayUnit,
+        metricInputUnit,
         lastEntry: entry,
         showSaveToast: false,
       };
@@ -171,19 +215,36 @@ const reducer = (state: State, action: Action): State => {
     case "SET_SETTING":
       return { ...state, settings: { ...state.settings, [action.key]: action.val } };
     case "CONVERT": {
-      if (!state.resultFrac || state.result === "Error" || !state.resultOriginalUnit) return state;
+      if (!state.resultFrac || state.error || !state.resultOriginalUnit) return state;
+      if (state.resultOriginalUnit === "metric") {
+        const nextUnit: MetricUnit = state.metricDisplayUnit === "mm" ? "cm" : "mm";
+        const converted = formatResult(
+          state.resultFrac,
+          "metric",
+          state.settings.fractionPrecision,
+          nextUnit
+        );
+        return {
+          ...state,
+          result: converted,
+          metricDisplayUnit: nextUnit,
+          resultConverted: nextUnit !== state.metricInputUnit,
+        };
+      }
       if (!state.resultConverted) {
         const converted = formatConverted(
           state.resultFrac,
           state.resultOriginalUnit,
-          state.settings.fractionPrecision
+          state.settings.fractionPrecision,
+          state.metricDisplayUnit
         );
         return { ...state, result: converted, resultConverted: true };
       }
       const original = formatResult(
         state.resultFrac,
         state.resultOriginalUnit,
-        state.settings.fractionPrecision
+        state.settings.fractionPrecision,
+        state.metricDisplayUnit
       );
       return { ...state, result: original, resultConverted: false };
     }
