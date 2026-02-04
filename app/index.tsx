@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, StatusBar, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useCalculator } from "../src/state/store";
 import { HistoryList } from "../src/components/HistoryList";
@@ -23,7 +24,7 @@ const KeyButton = ({
   };
   return (
     <Pressable onPress={onPress} className={`${base} ${variants[variant]}`}>
-      <Text className="text-lg font-semibold">{label}</Text>
+      <Text className="text-2xl font-semibold">{label}</Text>
     </Pressable>
   );
 };
@@ -88,7 +89,7 @@ export default function CalculatorScreen() {
     state.settings.unitSystem === "imperial" ? "ft-in" : state.metricDisplayUnit;
 
   return (
-    <View className="flex-1 bg-zinc-50 dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-zinc-50 dark:bg-zinc-950" edges={["top", "bottom"]}>
       <StatusBar barStyle="default" />
       <SaveToast show={state.showSaveToast} />
 
@@ -113,13 +114,13 @@ export default function CalculatorScreen() {
       </View>
 
       <View className="min-h-[110px] justify-end bg-white px-4 py-4 dark:bg-zinc-900">
-        <View className="min-h-[24px] flex-row flex-wrap items-center">
+        <View className="min-h-[28px] flex-row flex-wrap items-center">
           {state.expr ? (
-            <Text className="font-mono text-base text-zinc-500 dark:text-zinc-400">
+            <Text className="font-mono text-lg text-zinc-500 dark:text-zinc-400">
               {state.expr}
             </Text>
           ) : (
-            <Text className="text-sm text-zinc-400 dark:text-zinc-600">
+            <Text className="text-base text-zinc-400 dark:text-zinc-600">
               Enter measurement...
             </Text>
           )}
@@ -266,6 +267,6 @@ export default function CalculatorScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

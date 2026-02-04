@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useCalculator, type Precision } from "../src/state/store";
 
@@ -78,7 +79,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-zinc-50 dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-zinc-50 dark:bg-zinc-950" edges={["top", "bottom"]}>
       <View className="flex-row items-center gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <Pressable onPress={() => router.back()}>
           <Text className="text-sm font-semibold text-amber-600">← Back</Text>
@@ -208,6 +209,6 @@ export default function SettingsScreen() {
           <Text className="text-sm text-zinc-500 dark:text-zinc-400">v1.0.0</Text>
         </Row>
       </Section>
-    </View>
+    </SafeAreaView>
   );
 }
