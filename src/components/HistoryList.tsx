@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, SectionList, Text, TextInput, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import type { CalculationRecord } from "../state/store";
 import { timeAgo } from "../lib/time";
@@ -136,36 +136,37 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
     </SwipeRow>
   );
 
-  if (items.length === 0) {
-    return (
-      <View className="items-center justify-center px-6 py-16">
-        <Text className="mt-3 text-base font-semibold text-zinc-700 dark:text-zinc-200">
-          No measurements yet
-        </Text>
-        <Text className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Start calculating to build your list!
-        </Text>
-      </View>
-    );
-  }
+  const sections = [
+    favorites.length > 0 ? { title: "Favorites", data: favorites } : null,
+    rest.length > 0 ? { title: favorites.length > 0 ? "Recent" : "", data: rest } : null,
+  ].filter(Boolean) as { title: string; data: CalculationRecord[] }[];
 
   return (
-    <ScrollView className="pb-6" contentContainerStyle={{ paddingBottom: 24 }}>
-      {favorites.length > 0 && (
-        <>
-          <SectionLabel title="Favorites" />
-          {favorites.map(renderItem)}
-        </>
-      )}
-      {rest.length > 0 && (
-        <>
-          {favorites.length > 0 && <SectionLabel title="Recent" />}
-          {rest.map(renderItem)}
-        </>
-      )}
-      <Text className="px-5 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        Swipe left on an item to delete
-      </Text>
-    </ScrollView>
+    <SectionList
+      sections={sections}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => renderItem(item)}
+      renderSectionHeader={({ section }) =>
+        section.title ? <SectionLabel title={section.title} /> : null
+      }
+      ListEmptyComponent={
+        <View className="flex-1 items-center justify-center px-6 py-16">
+          <Text className="mt-3 text-base font-semibold text-zinc-700 dark:text-zinc-200">
+            No measurements yet
+          </Text>
+          <Text className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Start calculating to build your list!
+          </Text>
+        </View>
+      }
+      ListFooterComponent={
+        <Text className="px-5 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
+          Swipe left on an item to delete
+        </Text>
+      }
+      stickySectionHeadersEnabled={false}
+      className="flex-1 pb-6"
+      contentContainerStyle={{ paddingBottom: 24 }}
+    />
   );
 };

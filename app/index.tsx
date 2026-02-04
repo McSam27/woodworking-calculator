@@ -122,10 +122,16 @@ export default function CalculatorScreen() {
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
   };
 
-  const unitLabel = state.settings.unitSystem === "imperial" ? "ft-in" : "mm/cm";
+  const unitLabel =
+    state.settings.unitSystem === "imperial"
+      ? "ft-in"
+      : state.settings.unitSystem === "imperial-inches"
+        ? "in"
+        : "mm/cm";
 
   const unitOptions = [
     { key: "imperial", label: "Imperial", sub: "ft-in" },
+    { key: "imperial-inches", label: "Inches", sub: "in" },
     { key: "metric", label: "Metric", sub: "mm/cm" },
   ] as const;
 

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import React from "react";
+import { Alert, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useCalculator, type Precision } from "../src/state/store";
@@ -93,10 +93,19 @@ const ThemeButton = ({
 export default function SettingsScreen() {
   const router = useRouter();
   const { state, dispatch } = useCalculator();
-  const [confirmClear, setConfirmClear] = useState(false);
-
   const setPrecision = (value: Precision) => {
     dispatch({ type: "SET_SETTING", key: "fractionPrecision", val: value });
+  };
+
+  const confirmClearHistory = () => {
+    Alert.alert(
+      "Clear measurement history?",
+      "This will delete all saved measurements and cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Clear", style: "destructive", onPress: () => dispatch({ type: "CLEAR_ALL" }) },
+      ]
+    );
   };
 
   return (
@@ -134,7 +143,7 @@ export default function SettingsScreen() {
         </Row>
         <Row label="Default units">
           <View className="flex-row gap-2">
-            {(["imperial", "metric"] as const).map((unit) => (
+            {(["imperial", "imperial-inches", "metric"] as const).map((unit) => (
               <Pressable
                 key={unit}
                 onPress={() => dispatch({ type: "SET_SETTING", key: "unitSystem", val: unit })}
@@ -151,7 +160,11 @@ export default function SettingsScreen() {
                       : "text-zinc-700 dark:text-zinc-200"
                   }`}
                 >
-                  {unit === "imperial" ? "Imperial" : "Metric"}
+                  {unit === "imperial"
+                    ? "Imperial"
+                    : unit === "imperial-inches"
+                      ? "Inches"
+                      : "Metric"}
                 </Text>
               </Pressable>
             ))}
@@ -173,44 +186,14 @@ export default function SettingsScreen() {
 
       <Section title="Data">
         <View className="px-5 py-4">
-          {!confirmClear ? (
-            <Pressable
-              onPress={() => setConfirmClear(true)}
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950"
-            >
-              <Text className="text-center text-sm font-semibold text-red-600 dark:text-red-300">
-                Clear Measurement History
-              </Text>
-            </Pressable>
-          ) : (
-            <View className="items-center">
-              <Text className="text-sm font-semibold text-red-600 dark:text-red-300">
-                Delete all saved measurements?
-              </Text>
-              <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                This cannot be undone.
-              </Text>
-              <View className="mt-3 flex-row gap-3">
-                <Pressable
-                  onPress={() => {
-                    dispatch({ type: "CLEAR_ALL" });
-                    setConfirmClear(false);
-                  }}
-                  className="rounded-lg bg-red-600 px-4 py-2"
-                >
-                  <Text className="text-xs font-semibold text-white">Delete All</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setConfirmClear(false)}
-                  className="rounded-lg bg-zinc-200 px-4 py-2 dark:bg-zinc-800"
-                >
-                  <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
-                    Cancel
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
+          <Pressable
+            onPress={confirmClearHistory}
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950"
+          >
+            <Text className="text-center text-sm font-semibold text-red-600 dark:text-red-300">
+              Clear Measurement History
+            </Text>
+          </Pressable>
         </View>
       </Section>
 

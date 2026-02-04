@@ -1,6 +1,6 @@
 export type Fraction = { num: number; den: number };
 
-export type UnitSystem = "imperial" | "metric";
+export type UnitSystem = "imperial" | "imperial-inches" | "metric";
 export type MetricUnit = "mm" | "cm";
 
 const INCHES_PER_FOOT = 12;
@@ -169,11 +169,11 @@ export const evaluateExpression = (
     }
     if (t.type === "val") {
       consume();
-      return unitSystem === "imperial"
-        ? parseImperialValue(t.raw, (message) => {
+      return unitSystem === "metric"
+        ? parseMetricValue(t.raw)
+        : parseImperialValue(t.raw, (message) => {
             error ??= message;
-          })
-        : parseMetricValue(t.raw);
+          });
     }
     return null;
   };
@@ -252,6 +252,18 @@ export const formatImperial = (frac: Fraction, precision: number) => {
   return `${sign}${parts.join(" ")}`.trim();
 };
 
+export const formatImperialInches = (frac: Fraction, precision: number) => {
+  const value = toDecimal(frac);
+  const neg = value < 0;
+  const abs = Math.abs(value);
+  const inches = abs;
+  const { whole, num, den } = snapToDenominator(inches, precision);
+  const sign = neg ? "-" : "";
+  if (num > 0 && whole > 0) return `${sign}${whole}-${num}/${den}"`;
+  if (num > 0) return `${sign}${num}/${den}"`;
+  return `${sign}${whole}"`;
+};
+
 export const formatMetric = (frac: Fraction, unit: MetricUnit = "mm") => {
   const inches = toDecimal(frac);
   const mm = inches * MM_PER_INCH;
@@ -264,7 +276,12 @@ export const formatResult = (
   unitSystem: UnitSystem,
   precision: number,
   metricUnit: MetricUnit = "mm"
-) => (unitSystem === "imperial" ? formatImperial(frac, precision) : formatMetric(frac, metricUnit));
+) =>
+  unitSystem === "metric"
+    ? formatMetric(frac, metricUnit)
+    : unitSystem === "imperial-inches"
+      ? formatImperialInches(frac, precision)
+      : formatImperial(frac, precision);
 
 export const inchesToMm = (inches: number) => inches * MM_PER_INCH;
 export const mmToInches = (mm: number) => mm / MM_PER_INCH;
