@@ -80,7 +80,8 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
               placeholderTextColor="#71717a"
               autoFocus
               maxLength={60}
-              className="flex-1 rounded-lg border border-amber-500 bg-white px-3 py-2 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
+              className="flex-1 rounded-lg border border-amber-500 bg-white px-3 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
+              style={{ height: 36, lineHeight: 20 }}
             />
             <Pressable onPress={() => saveEdit(item.id)} className="rounded-lg bg-amber-600 px-3 py-2">
               <Text className="text-xs font-semibold text-white">Save</Text>
@@ -90,17 +91,28 @@ export const HistoryList = ({ items, onDelete, onToggleFavorite, onSetDescriptio
             </Pressable>
           </View>
         ) : (
-          <Pressable onPress={() => startEdit(item)}>
-            {item.description ? (
-              <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                {item.description}
-              </Text>
-            ) : (
+          {item.description ? (
+            <View className="flex-row items-center gap-2">
+              <Pressable onPress={() => startEdit(item)} className="flex-1">
+                <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  {item.description}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => startEdit(item)}
+                hitSlop={8}
+                className="rounded-full"
+              >
+                <Text className="text-base text-zinc-400 dark:text-zinc-500">✎</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable onPress={() => startEdit(item)}>
               <Text className="text-xs italic text-zinc-500 dark:text-zinc-400">
                 Tap to add description...
               </Text>
-            )}
-          </Pressable>
+            </Pressable>
+          )}
         )}
 
         <Text className="mt-2 font-mono text-xs text-zinc-500 dark:text-zinc-400">{item.expression}</Text>

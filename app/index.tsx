@@ -43,6 +43,7 @@ export default function CalculatorScreen() {
   const { state, dispatch } = useCalculator();
   const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
+  const [showUnits, setShowUnits] = useState(false);
 
   const keys = useMemo(
     () => [
@@ -92,6 +93,11 @@ export default function CalculatorScreen() {
   const unitLabel =
     state.settings.unitSystem === "imperial" ? "ft-in" : state.metricDisplayUnit;
 
+  const unitOptions = [
+    { key: "imperial", label: "Imperial", sub: "ft-in" },
+    { key: "metric", label: "Metric", sub: "mm/cm" },
+  ] as const;
+
   return (
     <SafeAreaView className="flex-1 bg-zinc-50 dark:bg-zinc-950" edges={["top", "bottom"]}>
       <StatusBar barStyle="default" />
@@ -103,11 +109,17 @@ export default function CalculatorScreen() {
           <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             WoodCalc
           </Text>
-          <View className="rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950">
+          <Pressable
+            onPress={() => setShowUnits(true)}
+            className="flex-row items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 dark:bg-amber-950"
+          >
             <Text className="text-[10px] font-semibold text-amber-700 dark:text-amber-200">
               {unitLabel}
             </Text>
-          </View>
+            <Text className="text-[10px] font-semibold text-amber-700 dark:text-amber-200">
+              ▾
+            </Text>
+          </Pressable>
         </View>
         <Pressable
           onPress={() => router.push("/settings")}
@@ -268,6 +280,57 @@ export default function CalculatorScreen() {
               onToggleFavorite={(id) => dispatch({ type: "TOGGLE_FAV", id })}
               onSetDescription={(id, desc) => dispatch({ type: "SET_DESC", id, desc })}
             />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={showUnits} animationType="fade">
+        <Pressable
+          onPress={() => setShowUnits(false)}
+          className="flex-1 bg-black/20"
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            className="ml-4 mt-16 w-44 rounded-2xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <Text className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Units
+            </Text>
+            {unitOptions.map((option) => {
+              const selected = state.settings.unitSystem === option.key;
+              return (
+                <Pressable
+                  key={option.key}
+                  onPress={() => {
+                    dispatch({ type: "SET_SETTING", key: "unitSystem", val: option.key });
+                    setShowUnits(false);
+                  }}
+                  className={`flex-row items-center justify-between rounded-xl px-2 py-2 ${
+                    selected ? "bg-amber-100 dark:bg-amber-950" : ""
+                  }`}
+                >
+                  <View>
+                    <Text
+                      className={`text-sm font-semibold ${
+                        selected
+                          ? "text-amber-800 dark:text-amber-200"
+                          : "text-zinc-800 dark:text-zinc-100"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                      {option.sub}
+                    </Text>
+                  </View>
+                  {selected && (
+                    <Text className="text-xs font-semibold text-amber-700 dark:text-amber-200">
+                      ✓
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
           </Pressable>
         </Pressable>
       </Modal>
