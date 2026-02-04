@@ -54,7 +54,7 @@ export default function CalculatorScreen() {
     ],
     []
   );
-  const fractionKeys = ["1/2", "1/4", "1/8", "1/16", "/"];
+  const fractionKeys = ["1/2", "1/4", "1/8", "1/16", "/", "␣"];
 
   useEffect(() => {
     if (!state.showSaveToast) return;
@@ -76,6 +76,10 @@ export default function CalculatorScreen() {
   };
 
   const handleFraction = (value: string) => {
+    if (value === "␣") {
+      dispatch({ type: "INPUT", val: " " });
+      return;
+    }
     if (value === "/") {
       dispatch({ type: "INPUT", val: "/" });
       return;
@@ -116,7 +120,7 @@ export default function CalculatorScreen() {
       <View className="min-h-[110px] justify-end bg-white px-4 py-4 dark:bg-zinc-900">
         <View className="min-h-[28px] flex-row flex-wrap items-center">
           {state.expr ? (
-            <Text className="font-mono text-lg text-zinc-500 dark:text-zinc-400">
+            <Text className="font-mono text-xl text-zinc-500 dark:text-zinc-400">
               {state.expr}
             </Text>
           ) : (
@@ -128,7 +132,7 @@ export default function CalculatorScreen() {
         {state.result && (
           <View className="mt-2 flex-row items-center justify-end gap-2">
             <Text
-              className={`font-mono text-2xl font-bold ${
+              className={`font-mono text-3xl font-bold ${
                 state.error
                   ? "text-red-500"
                   : "text-amber-600 dark:text-amber-400"
