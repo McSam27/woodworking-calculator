@@ -249,8 +249,8 @@ export const HistoryList = ({
             </Text>
             <Text className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {activeTab === "favorites"
-                ? "Tap the heart on any measurement in All to add it here."
-                : "Start calculating to build your list!"}
+                ? "Hit the heart on a measurement to pin it here."
+                : "Run a quick calc and it will land here."}
             </Text>
           </View>
         }

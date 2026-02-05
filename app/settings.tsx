@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useCalculator, type Precision } from "../src/state/store";
 
@@ -93,6 +93,8 @@ const ThemeButton = ({
 export default function SettingsScreen() {
   const router = useRouter();
   const { state, dispatch } = useCalculator();
+  const insets = useSafeAreaInsets();
+  const [showClearToast, setShowClearToast] = useState(false);
   const setPrecision = (value: Precision) => {
     dispatch({ type: "SET_SETTING", key: "fractionPrecision", val: value });
   };
@@ -103,13 +105,36 @@ export default function SettingsScreen() {
       "This will delete all saved measurements and cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Clear", style: "destructive", onPress: () => dispatch({ type: "CLEAR_ALL" }) },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: () => {
+            dispatch({ type: "CLEAR_ALL" });
+            setShowClearToast(true);
+          },
+        },
       ]
     );
   };
 
+  useEffect(() => {
+    if (!showClearToast) return;
+    const timer = setTimeout(() => setShowClearToast(false), 1500);
+    return () => clearTimeout(timer);
+  }, [showClearToast]);
+
   return (
     <SafeAreaView className="flex-1 bg-zinc-50 dark:bg-zinc-950" edges={["top", "bottom"]}>
+      {showClearToast && (
+        <View
+          className="absolute left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-200 px-4 py-3 shadow dark:bg-zinc-800"
+          style={{ bottom: Math.max(insets.bottom, 16) }}
+        >
+          <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+            Measurements cleared
+          </Text>
+        </View>
+      )}
       <View className="flex-row items-center gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <Pressable onPress={() => router.back()}>
           <Text className="text-sm font-semibold text-amber-600">← Back</Text>
@@ -188,9 +213,20 @@ export default function SettingsScreen() {
         <View className="px-5 py-4">
           <Pressable
             onPress={confirmClearHistory}
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950"
+            disabled={state.history.length === 0}
+            className={`rounded-xl border px-4 py-3 ${
+              state.history.length === 0
+                ? "border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900"
+                : "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950"
+            }`}
           >
-            <Text className="text-center text-sm font-semibold text-red-600 dark:text-red-300">
+            <Text
+              className={`text-center text-sm font-semibold ${
+                state.history.length === 0
+                  ? "text-zinc-400 dark:text-zinc-500"
+                  : "text-red-600 dark:text-red-300"
+              }`}
+            >
               Clear Measurement History
             </Text>
           </Pressable>
