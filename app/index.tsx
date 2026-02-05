@@ -16,7 +16,7 @@ import { HistoryList } from "../src/components/HistoryList";
 import { ImperialKeypad } from "../src/components/ImperialKeypad";
 import { MetricKeypad } from "../src/components/MetricKeypad";
 import { FractionText } from "../src/components/FractionText";
-import { formatImperial, inchesToMm, toDecimal } from "../src/lib/math";
+import { formatImperial, formatImperialInches, fractionFromDecimal, inchesToMm, toDecimal } from "../src/lib/math";
 
 const KeyButton = ({
   label,
@@ -119,6 +119,8 @@ export default function CalculatorScreen() {
 
   const showConversions = Boolean(state.result && !state.error && state.resultFrac);
   const inches = showConversions && state.resultFrac ? toDecimal(state.resultFrac) : 0;
+  const inchesFrac = fractionFromDecimal(inches, 1000000);
+  const inchesDisplayFrac = fractionFromDecimal(inches, state.settings.fractionPrecision);
   const mm = inchesToMm(inches);
   const cm = mm / 10;
   const formatFixed = (value: number, decimals = 2) =>
@@ -297,10 +299,19 @@ export default function CalculatorScreen() {
                 </Text>
                 <View className="mt-2 gap-1.5">
                   <Text className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-                    {formatImperial(state.resultFrac, state.settings.fractionPrecision)}
+                    {formatImperial(inchesDisplayFrac, state.settings.fractionPrecision)}
                   </Text>
                   <Text className="text-sm text-zinc-700 dark:text-zinc-200">
-                    {formatFixed(inches, 3)} in
+                    {(() => {
+                      const den = state.settings.fractionPrecision;
+                      const snapped = fractionFromDecimal(inches, den);
+                      const approx = toDecimal(snapped);
+                      const isFriendly = Math.abs(approx - inches) <= 1e-4;
+                      if (isFriendly) {
+                        return `${formatImperialInches(snapped, den).replace(/"$/, "")} in`;
+                      }
+                      return `${formatFixed(inches, 3)} in`;
+                    })()}
                   </Text>
                   <Text className="text-sm text-zinc-700 dark:text-zinc-200">
                     {formatFixed(mm, 2)} mm

@@ -3,7 +3,7 @@ import { Platform, Pressable, SectionList, Text, TextInput, View } from "react-n
 import { Ionicons } from "@expo/vector-icons";
 import { Swipeable } from "react-native-gesture-handler";
 import type { CalculationRecord, Precision } from "../state/store";
-import { formatImperial, fractionFromDecimal, inchesToMm } from "../lib/math";
+import { formatImperial, formatImperialInches, fractionFromDecimal, inchesToMm, toDecimal } from "../lib/math";
 import { timeAgo } from "../lib/time";
 
 type Props = {
@@ -99,6 +99,7 @@ export const HistoryList = ({
   const renderItem = (item: CalculationRecord) => {
     const inches = item.resultRaw;
     const frac = fractionFromDecimal(inches, 1000000);
+    const displayFrac = fractionFromDecimal(inches, precision);
     const mm = inchesToMm(inches);
     const cm = mm / 10;
     return (
@@ -174,12 +175,21 @@ export const HistoryList = ({
           <View className="mt-2 flex-row flex-wrap">
             <View className="w-1/2 pr-2">
               <Text className="font-mono text-base text-zinc-700 dark:text-zinc-200">
-                {formatFixed(inches, 3)} in
+                {(() => {
+                  const den = precision;
+                  const snapped = fractionFromDecimal(inches, den);
+                  const approx = toDecimal(snapped);
+                  const isFriendly = Math.abs(approx - inches) <= 1e-4;
+                  if (isFriendly) {
+                    return `${formatImperialInches(snapped, den).replace(/"$/, "")} in`;
+                  }
+                  return `${formatFixed(inches, 3)} in`;
+                })()}
               </Text>
             </View>
             <View className="w-1/2 pl-2">
               <Text className="font-mono text-base text-zinc-700 dark:text-zinc-200">
-                {formatImperial(frac, precision)}
+                {formatImperial(displayFrac, precision)}
               </Text>
             </View>
             <View className="mt-2 w-1/2 pr-2">
