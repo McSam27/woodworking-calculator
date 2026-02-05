@@ -15,6 +15,7 @@ import { useCalculator } from "../src/state/store";
 import { HistoryList } from "../src/components/HistoryList";
 import { ImperialKeypad } from "../src/components/ImperialKeypad";
 import { MetricKeypad } from "../src/components/MetricKeypad";
+import { FractionText } from "../src/components/FractionText";
 import { formatImperial, inchesToMm, toDecimal } from "../src/lib/math";
 
 const KeyButton = ({
@@ -313,16 +314,25 @@ export default function CalculatorScreen() {
             <View className={showConversions ? "w-2/3" : "flex-1"}>
               <View className="min-h-[28px] flex-row flex-wrap items-center justify-end">
                 {state.expr ? (
-                  <Text
-                    className={`w-full text-right ${
-                      state.result ? "text-[32px]" : "text-[48px]"
-                    } text-zinc-800 dark:text-zinc-200`}
-                  >
-                    {state.expr}
+                  <View className="w-full flex-row flex-wrap items-end justify-end">
+                    <FractionText
+                      text={state.expr}
+                      className={`${
+                        state.result ? "text-[32px]" : "text-[48px]"
+                      } text-zinc-800 dark:text-zinc-200`}
+                      fractionClassName={`${
+                        state.result ? "text-[16px]" : "text-[24px]"
+                      } text-zinc-800 dark:text-zinc-200`}
+                      numeratorClassName={`${
+                        state.result ? "text-[16px]" : "text-[24px]"
+                      } text-zinc-800 dark:text-zinc-200`}
+                    />
                     {!state.result && (
-                      <Text className="text-zinc-600 dark:text-zinc-400">|</Text>
+                      <Text className={`${
+                        state.result ? "text-[32px]" : "text-[48px]"
+                      } text-zinc-600 dark:text-zinc-400`}>|</Text>
                     )}
-                  </Text>
+                  </View>
                 ) : null}
               </View>
               {state.result && (
