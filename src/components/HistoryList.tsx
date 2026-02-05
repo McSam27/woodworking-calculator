@@ -139,14 +139,14 @@ export const HistoryList = ({
             >
               {item.description ?? "Add description"}
             </Text>
-            <View className="flex-row items-center gap-3">
-              <Pressable onPress={() => startEdit(item)}>
-                <Ionicons name="create-outline" size={16} color="#a1a1aa" />
+            <View className="flex-row items-center gap-4">
+              <Pressable onPress={() => startEdit(item)} className="p-1">
+                <Ionicons name="create-outline" size={18} color="#a1a1aa" />
               </Pressable>
-              <Pressable onPress={() => onToggleFavorite(item.id)}>
+              <Pressable onPress={() => onToggleFavorite(item.id)} className="p-1">
                 <Ionicons
                   name={item.isFavorited ? "heart" : "heart-outline"}
-                  size={16}
+                  size={18}
                   color={item.isFavorited ? "#f59e0b" : "#a1a1aa"}
                 />
               </Pressable>
@@ -154,11 +154,11 @@ export const HistoryList = ({
           </View>
         )}
 
-        <Text className="mt-2 font-mono text-base text-zinc-500 dark:text-zinc-400">
+        <Text className="mt-2 font-mono text-lg text-zinc-500 dark:text-zinc-400">
           {item.expression}
         </Text>
         <View className="mt-2 flex-row items-center justify-between">
-          <Text className="font-mono text-lg font-semibold text-amber-600 dark:text-amber-400">
+          <Text className="font-mono text-xl font-semibold text-amber-600 dark:text-amber-400">
             = {item.result}
           </Text>
           <Text className="text-sm text-zinc-500 dark:text-zinc-400">
