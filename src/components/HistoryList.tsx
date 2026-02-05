@@ -155,9 +155,16 @@ export const HistoryList = ({
           <Text className="font-mono text-xl font-semibold text-amber-600 dark:text-amber-400">
             = {item.result}
           </Text>
-          <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-            {timeAgo(item.createdAt)}
-          </Text>
+          <View className="items-end">
+            <View className="mb-1 rounded-full bg-zinc-200 px-2 py-0.5 dark:bg-zinc-800">
+              <Text className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
+                {item.inputUnit === "ft/in" ? "FT/IN" : item.inputUnit.toUpperCase()}
+              </Text>
+            </View>
+            <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+              {timeAgo(item.createdAt)}
+            </Text>
+          </View>
         </View>
 
         <View className="mt-3 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-950">

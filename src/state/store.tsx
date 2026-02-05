@@ -17,6 +17,7 @@ export type CalculationRecord = {
   result: string;
   resultRaw: number;
   unitSystem: UnitSystem;
+  inputUnit: "mm" | "cm" | "in" | "ft/in";
   isFavorited: boolean;
   description: string | null;
   createdAt: string;
@@ -77,6 +78,14 @@ const initialState: State = {
   settings: initialSettings,
   lastEntry: null,
   showSaveToast: false,
+};
+
+const deriveInputUnit = (expression: string, unitSystem: UnitSystem) => {
+  if (unitSystem === "imperial-inches") return "in";
+  if (unitSystem === "imperial") return "ft/in";
+  if (unitSystem === "metric-cm") return "cm";
+  if (/cm\b/i.test(expression)) return "cm";
+  return "mm";
 };
 
 const reducer = (state: State, action: Action): State => {
@@ -151,6 +160,7 @@ const reducer = (state: State, action: Action): State => {
         result: formatted,
         resultRaw: toDecimal(frac),
         unitSystem: state.settings.unitSystem,
+        inputUnit: deriveInputUnit(state.expr, state.settings.unitSystem),
         isFavorited: false,
         description: null,
         createdAt: now,
@@ -207,7 +217,14 @@ const reducer = (state: State, action: Action): State => {
     case "SET_SETTING":
       return { ...state, settings: { ...state.settings, [action.key]: action.val } };
     case "LOAD_STATE":
-      return { ...state, history: action.history, settings: action.settings };
+      return {
+        ...state,
+        history: action.history.map((item) => ({
+          ...item,
+          inputUnit: item.inputUnit ?? deriveInputUnit(item.expression, item.unitSystem),
+        })),
+        settings: action.settings,
+      };
     default:
       return state;
   }

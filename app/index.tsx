@@ -598,11 +598,9 @@ export default function CalculatorScreen() {
               </Text>
               <Pressable
                 onPress={() => setShowHistory(false)}
-                className="rounded-lg bg-zinc-200 px-3 py-1.5 dark:bg-zinc-800"
+                className="h-8 w-8 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800"
               >
-                <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
-                  Done
-                </Text>
+                <Ionicons name="close" size={16} color="#3f3f46" />
               </Pressable>
             </View>
             <HistoryList

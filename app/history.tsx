@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { HistoryList } from "../src/components/HistoryList";
@@ -17,11 +18,9 @@ export default function HistoryScreen() {
         </Text>
         <Pressable
           onPress={() => router.back()}
-          className="rounded-lg bg-zinc-200 px-3 py-1.5 dark:bg-zinc-800"
+          className="h-8 w-8 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800"
         >
-          <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
-            Done
-          </Text>
+          <Ionicons name="close" size={16} color="#3f3f46" />
         </Pressable>
       </View>
       <HistoryList
