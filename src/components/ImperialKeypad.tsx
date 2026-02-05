@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import type { Pressable } from "react-native";
-import { View } from "react-native";
+import { Pressable as RNPressable, Text, View } from "react-native";
 
 type KeyButtonProps = {
   label: string;
@@ -9,6 +9,8 @@ type KeyButtonProps = {
   containerClassName?: string;
   textClassName?: string;
   style?: React.ComponentProps<typeof Pressable>["style"];
+  onLongPress?: () => void;
+  onPressOut?: () => void;
 };
 
 type Props = {
@@ -53,6 +55,32 @@ export const ImperialKeypad = ({
   KeyButton,
 }: Props) => {
   const wholeNumberClass = "bg-zinc-200 dark:bg-zinc-900";
+  const [showZeroPopover, setShowZeroPopover] = useState(false);
+  const longPressActive = useRef(false);
+
+  const handleNineLongPress = () => {
+    longPressActive.current = true;
+    setShowZeroPopover(true);
+  };
+
+  const handleNinePressOut = () => {
+    if (longPressActive.current) {
+      onFractionDigit("0");
+    }
+    longPressActive.current = false;
+    setShowZeroPopover(false);
+  };
+
+  const handleNinePress = () => {
+    if (longPressActive.current) return;
+    onFractionDigit("9");
+  };
+
+  const handleZeroFromPopover = () => {
+    setShowZeroPopover(false);
+    onFractionDigit("0");
+  };
+
   return (
     <View className="gap-2 px-3 pb-2" style={{ height: keypadHeight }}>
     <View className="flex-row items-start">
@@ -131,15 +159,38 @@ export const ImperialKeypad = ({
               className="flex-row justify-between"
               style={{ height: imperialKeyHeight }}
             >
-              {row.map((key) => (
-                <KeyButton
-                  key={key}
-                  label={key}
-                  onPress={() => onFractionDigit(key)}
-                  style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
-                  textClassName={getKeyTextClass(key)}
-                />
-              ))}
+              {row.map((key) =>
+                key === "9" ? (
+                  <View key={key} className="relative">
+                    <KeyButton
+                      label={key}
+                      onPress={handleNinePress}
+                      onLongPress={handleNineLongPress}
+                      onPressOut={handleNinePressOut}
+                      style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
+                      textClassName={getKeyTextClass(key)}
+                    />
+                    {showZeroPopover && (
+                      <RNPressable
+                        onPress={handleZeroFromPopover}
+                        className="absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-full bg-zinc-900 px-3 py-1 shadow dark:bg-zinc-100"
+                      >
+                        <Text className="text-base font-semibold text-white dark:text-zinc-900">
+                          0
+                        </Text>
+                      </RNPressable>
+                    )}
+                  </View>
+                ) : (
+                  <KeyButton
+                    key={key}
+                    label={key}
+                    onPress={() => onFractionDigit(key)}
+                    style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
+                    textClassName={getKeyTextClass(key)}
+                  />
+                )
+              )}
             </View>
           ))}
         </View>

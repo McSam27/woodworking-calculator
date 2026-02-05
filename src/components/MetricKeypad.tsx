@@ -9,6 +9,8 @@ type KeyButtonProps = {
   containerClassName?: string;
   textClassName?: string;
   style?: React.ComponentProps<typeof Pressable>["style"];
+  onLongPress?: () => void;
+  onPressOut?: () => void;
 };
 
 type Props = {

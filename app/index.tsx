@@ -24,6 +24,8 @@ const KeyButton = ({
   containerClassName,
   textClassName,
   style,
+  onLongPress,
+  onPressOut,
 }: {
   label: string;
   onPress: () => void;
@@ -31,6 +33,8 @@ const KeyButton = ({
   containerClassName?: string;
   textClassName?: string;
   style?: React.ComponentProps<typeof Pressable>["style"];
+  onLongPress?: () => void;
+  onPressOut?: () => void;
 }) => {
   const base =
     "items-center justify-center rounded-xl";
@@ -55,6 +59,8 @@ const KeyButton = ({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      onPressOut={onPressOut}
       className={`${base} ${variants[variant].container} ${containerClassName ?? ""}`}
       style={style}
     >
@@ -148,14 +154,15 @@ export default function CalculatorScreen() {
   };
 
   const handleFractionDigit = (value: string) => {
-    fractionEntry.current = true;
     if (justEvaluated.current) {
       justEvaluated.current = false;
       dispatch({ type: "SET_EXPR", val: value });
       return;
     }
+    const wasFractionEntry = fractionEntry.current;
+    fractionEntry.current = true;
     const lastChar = state.expr.slice(-1);
-    const autoSpace = /\d/.test(lastChar);
+    const autoSpace = !wasFractionEntry && /\d/.test(lastChar);
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
   };
 
