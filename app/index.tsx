@@ -202,7 +202,7 @@ export default function CalculatorScreen() {
         </View>
       </View>
 
-      <View className="min-h-[110px] bg-white dark:bg-zinc-900">
+      <View className="min-h-[110px] bg-zinc-50 dark:bg-zinc-950">
         <ScrollView
           showsVerticalScrollIndicator={false}
           className="max-h-[220px]"
@@ -210,7 +210,7 @@ export default function CalculatorScreen() {
         >
           <View className="flex-row gap-3">
             {showConversions && state.resultFrac && (
-              <View className="w-1/3 rounded-xl bg-zinc-50 px-3 py-3 dark:bg-zinc-950">
+              <View className="w-1/3 rounded-xl bg-zinc-100 px-3 py-3 dark:bg-zinc-800">
                 <Text className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   Conversions
                 </Text>
