@@ -458,9 +458,7 @@ export default function CalculatorScreen() {
                     </Text>
                   </View>
                   {selected && (
-                    <Text className="text-xs font-semibold text-amber-700 dark:text-amber-200">
-                      Selected
-                    </Text>
+                    <Ionicons name="checkmark" size={16} color="#b45309" />
                   )}
                 </Pressable>
               );
