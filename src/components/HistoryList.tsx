@@ -22,28 +22,16 @@ const SectionLabel = ({ title }: { title: string }) => (
 
 const SwipeRow = ({
   onDelete,
-  onEdit,
   children,
   simultaneousHandlers,
 }: {
   onDelete: () => void;
-  onEdit: () => void;
   children: React.ReactNode;
   simultaneousHandlers: React.RefObject<SectionList<CalculationRecord>>;
 }) => {
   const renderRight = () => (
-    <View className="flex h-full w-44 flex-row items-stretch">
-      <Pressable
-        onPress={onEdit}
-        className="flex-1 items-center justify-center bg-zinc-500"
-      >
-        <Ionicons name="create-outline" size={18} color="#ffffff" />
-        <Text className="mt-1 text-xs font-semibold text-white">Name</Text>
-      </Pressable>
-      <Pressable
-        onPress={onDelete}
-        className="flex-1 items-center justify-center bg-red-500"
-      >
+    <View className="flex h-full w-24 flex-row items-stretch">
+      <Pressable onPress={onDelete} className="flex-1 items-center justify-center bg-red-500">
         <Ionicons name="trash-outline" size={18} color="#ffffff" />
         <Text className="mt-1 text-xs font-semibold text-white">Delete</Text>
       </Pressable>
@@ -114,19 +102,14 @@ export const HistoryList = ({
     const mm = inchesToMm(inches);
     const cm = mm / 10;
     return (
-    <SwipeRow
-      key={item.id}
-      onDelete={() => onDelete(item.id)}
-      onEdit={() => startEdit(item)}
-      simultaneousHandlers={listRef}
-    >
+    <SwipeRow key={item.id} onDelete={() => onDelete(item.id)} simultaneousHandlers={listRef}>
       <View className="border-b border-zinc-200 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
         {editingId === item.id ? (
           <View className="mb-2 flex-row items-center gap-2">
             <TextInput
               value={editValue}
               onChangeText={setEditValue}
-              placeholder="Short description..."
+              placeholder="Add description..."
               placeholderTextColor="#71717a"
               autoFocus
               maxLength={60}
@@ -139,19 +122,37 @@ export const HistoryList = ({
               }}
             />
             <Pressable onPress={() => saveEdit(item.id)} className="rounded-lg bg-amber-600 px-3 py-2">
-              <Text className="text-xs font-semibold text-white">Save</Text>
+              <Ionicons name="checkmark" size={16} color="#ffffff" />
             </Pressable>
             <Pressable onPress={cancelEdit} className="rounded-lg bg-zinc-200 px-3 py-2 dark:bg-zinc-800">
-              <Text className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">X</Text>
+              <Ionicons name="close" size={16} color="#3f3f46" />
             </Pressable>
           </View>
-        ) : item.description ? (
-          <View className="flex-row items-center gap-2">
-            <Text className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              {item.description}
+        ) : (
+          <View className="mb-2 flex-row items-center justify-between">
+            <Text
+              className={`text-base font-semibold ${
+                item.description
+                  ? "text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-400 dark:text-zinc-500"
+              }`}
+            >
+              {item.description ?? "Add description"}
             </Text>
+            <View className="flex-row items-center gap-3">
+              <Pressable onPress={() => startEdit(item)}>
+                <Ionicons name="create-outline" size={16} color="#a1a1aa" />
+              </Pressable>
+              <Pressable onPress={() => onToggleFavorite(item.id)}>
+                <Ionicons
+                  name={item.isFavorited ? "heart" : "heart-outline"}
+                  size={16}
+                  color={item.isFavorited ? "#f59e0b" : "#a1a1aa"}
+                />
+              </Pressable>
+            </View>
           </View>
-        ) : null}
+        )}
 
         <Text className="mt-2 font-mono text-base text-zinc-500 dark:text-zinc-400">
           {item.expression}
@@ -160,18 +161,9 @@ export const HistoryList = ({
           <Text className="font-mono text-lg font-semibold text-amber-600 dark:text-amber-400">
             = {item.result}
           </Text>
-          <View className="flex-row items-center gap-3">
-            <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-              {timeAgo(item.createdAt)}
-            </Text>
-            <Pressable onPress={() => onToggleFavorite(item.id)}>
-              <Ionicons
-                name={item.isFavorited ? "heart" : "heart-outline"}
-                size={16}
-                color={item.isFavorited ? "#f59e0b" : "#a1a1aa"}
-              />
-            </Pressable>
-          </View>
+          <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+            {timeAgo(item.createdAt)}
+          </Text>
         </View>
 
         <View className="mt-3 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-950">
