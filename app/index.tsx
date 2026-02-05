@@ -13,6 +13,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCalculator } from "../src/state/store";
 import { HistoryList } from "../src/components/HistoryList";
+import { ImperialKeypad } from "../src/components/ImperialKeypad";
+import { MetricKeypad } from "../src/components/MetricKeypad";
 import { formatImperial, inchesToMm, toDecimal } from "../src/lib/math";
 
 const KeyButton = ({
@@ -79,6 +81,7 @@ export default function CalculatorScreen() {
   const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
   const [showUnits, setShowUnits] = useState(false);
+  const fractionEntry = React.useRef(false);
   const insets = useSafeAreaInsets();
   const isMetric =
     state.settings.unitSystem === "metric" || state.settings.unitSystem === "metric-cm";
@@ -129,6 +132,7 @@ export default function CalculatorScreen() {
     value.toFixed(decimals).replace(/\.?0+$/, "");
 
   const handleKey = (k: string) => {
+    fractionEntry.current = false;
     if (k === "AC") dispatch({ type: "CLEAR" });
     else if (k === "⌫") dispatch({ type: "BACKSPACE" });
     else if (k === "=") dispatch({ type: "EVAL" });
@@ -142,6 +146,7 @@ export default function CalculatorScreen() {
   };
 
   const handleFractionDigit = (value: string) => {
+    fractionEntry.current = true;
     const lastChar = state.expr.slice(-1);
     const autoSpace = /\d/.test(lastChar);
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
@@ -160,22 +165,32 @@ export default function CalculatorScreen() {
     if (slashIndex >= 0) {
       const tokenBase = token.slice(0, slashIndex + 1);
       const nextExpr = `${expr.slice(0, lastOpIndex + 1)}${tokenBase}${den}`;
+      fractionEntry.current = false;
       dispatch({ type: "SET_EXPR", val: nextExpr });
       return;
     }
 
     if (/^\d+$/.test(tokenTrim)) {
+      if (fractionEntry.current) {
+        const nextExpr = `${expr.slice(0, lastOpIndex + 1)}${tokenTrim}/${den}`;
+        fractionEntry.current = false;
+        dispatch({ type: "SET_EXPR", val: nextExpr });
+        return;
+      }
+      fractionEntry.current = false;
       dispatch({ type: "INPUT", val: ` 1/${den}` });
       return;
     }
 
     if (/\d$/.test(tokenTrim)) {
+      fractionEntry.current = false;
       dispatch({ type: "INPUT", val: `/${den}` });
       return;
     }
 
     const lastChar = expr.slice(-1);
     const autoSpace = /\d/.test(lastChar);
+    fractionEntry.current = false;
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}1/${den}` });
   };
 
@@ -326,260 +341,38 @@ export default function CalculatorScreen() {
 
       {isMetric ? (
         <View className="flex-1 justify-end" style={{ paddingBottom: Math.max(insets.bottom / 2, 6) }}>
-          <View
-            className="flex-row gap-2 px-3 pb-2"
-            style={{ height: keypadHeight }}
-          >
-          <View className="flex-[3] gap-2">
-            {[
-              ["AC", "⌫", "()"],
-              ["7", "8", "9"],
-              ["4", "5", "6"],
-              ["1", "2", "3"],
-              ["0", ".", "="],
-            ].map((row, rowIndex) => (
-              <View
-                key={`metric-row-${rowIndex}`}
-                className="flex-row justify-between"
-                style={{ height: metricKeyHeight }}
-              >
-                {row.map((key) => {
-                  const isEq = key === "=";
-                  const isDanger = key === "AC" || key === "⌫";
-                  return (
-                    <KeyButton
-                      key={key}
-                      label={key}
-                      onPress={() => handleKey(key)}
-                      variant={isEq ? "eq" : isDanger ? "danger" : "default"}
-                      style={{ width: metricKeyWidth, height: metricKeyHeight }}
-                      textClassName={getKeyTextClass(key)}
-                    />
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-          <View className="flex-1 gap-2 items-end">
-            {[
-              { label: "÷", flex: 1 },
-              { label: "×", flex: 1 },
-              { label: "−", flex: 1 },
-              { label: "+", flex: 2 },
-            ].map((op) => (
-              <View
-                key={op.label}
-                style={{
-                  height:
-                    op.flex === 2
-                      ? metricKeyHeight * 2 + keypadGap
-                      : metricKeyHeight,
-                }}
-              >
-                <KeyButton
-                  label={op.label}
-                  onPress={() => handleKey(op.label)}
-                  variant="op"
-                  style={{
-                    width: metricKeyWidth,
-                    height:
-                      op.flex === 2
-                        ? metricKeyHeight * 2 + keypadGap
-                        : metricKeyHeight,
-                  }}
-                  textClassName={getKeyTextClass(op.label)}
-                />
-              </View>
-            ))}
-          </View>
-          </View>
+          <MetricKeypad
+            keypadHeight={keypadHeight}
+            keypadGap={keypadGap}
+            metricKeyWidth={metricKeyWidth}
+            metricKeyHeight={metricKeyHeight}
+            onKeyPress={handleKey}
+            getKeyTextClass={getKeyTextClass}
+            KeyButton={KeyButton}
+          />
         </View>
       ) : (
         <View className="flex-1 justify-end" style={{ paddingBottom: Math.max(insets.bottom / 2, 6) }}>
-          <View className="gap-2 px-3 pb-2" style={{ height: keypadHeight }}>
-            <View className="flex-row items-start">
-              <View style={{ width: imperialLeftWidth }}>
-                <View className="gap-2">
-                  {[
-                    ["1", "2"],
-                    ["3", "4"],
-                    ["5", "6"],
-                  ].map((row, rowIndex) => (
-                    <View
-                      key={`imperial-left-top-${rowIndex}`}
-                      className="flex-row justify-between"
-                      style={{ height: imperialKeyHeight, width: imperialLeftWidth }}
-                    >
-                      {row.map((key) => (
-                        <KeyButton
-                          key={key}
-                          label={key}
-                          onPress={() => handleKey(key)}
-                          style={{ width: leftKeyWidth, height: imperialKeyHeight }}
-                          textClassName={getKeyTextClass(key)}
-                        />
-                      ))}
-                    </View>
-                  ))}
-                </View>
-                <View style={{ height: horizontalDividerTotal }} />
-                <View className="gap-2">
-                  {[
-                    ["7", "8"],
-                    ["9", "0"],
-                    [".", "'"],
-                    ["\""],
-                  ].map((row, rowIndex) => (
-                    <View
-                      key={`imperial-left-bottom-${rowIndex}`}
-                      className="flex-row justify-between"
-                      style={{ height: imperialKeyHeight, width: imperialLeftWidth }}
-                    >
-                      {row.length === 1 ? (
-                        <KeyButton
-                          label={row[0]}
-                          onPress={() => handleKey(row[0])}
-                          style={{ width: imperialLeftWidth, height: imperialKeyHeight }}
-                          textClassName={getKeyTextClass(row[0])}
-                        />
-                      ) : (
-                        row.map((key) => (
-                          <KeyButton
-                            key={key}
-                            label={key}
-                            onPress={() => handleKey(key)}
-                            style={{ width: leftKeyWidth, height: imperialKeyHeight }}
-                            textClassName={getKeyTextClass(key)}
-                          />
-                        ))
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
-              <View style={{ width: middleDividerTotal, height: imperialBlockHeight }} />
-              <View style={{ width: imperialRightWidth }}>
-                <View className="gap-2">
-                  {[
-                    ["1", "2", "3"],
-                    ["4", "5", "6"],
-                    ["7", "8", "9"],
-                  ].map((row, rowIndex) => (
-                    <View
-                      key={`imperial-right-top-${rowIndex}`}
-                      className="flex-row justify-between"
-                      style={{ height: imperialKeyHeight }}
-                    >
-                      {row.map((key) => (
-                        <KeyButton
-                          key={key}
-                          label={key}
-                          onPress={() => handleFractionDigit(key)}
-                          style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
-                          textClassName={getKeyTextClass(key)}
-                        />
-                      ))}
-                    </View>
-                  ))}
-                </View>
-                <View
-                  className="items-center justify-center"
-                  style={{ height: horizontalDividerTotal }}
-                >
-                  <View
-                    className="rounded-full bg-zinc-300 dark:bg-zinc-700"
-                    style={{ height: middleDividerWidth, width: imperialRightWidth }}
-                  />
-                </View>
-                <View className="gap-2">
-                  {[
-                    ["2", "4", "8"],
-                    ["16", "32", "64"],
-                  ].map((row, rowIndex) => (
-                    <View
-                      key={`imperial-right-den-${rowIndex}`}
-                      className="flex-row justify-between"
-                      style={{ height: imperialKeyHeight }}
-                    >
-                      {row.map((key) => (
-                        <KeyButton
-                          key={key}
-                          label={key}
-                          onPress={() => handleDenominator(key)}
-                          style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
-                          textClassName={getKeyTextClass(key)}
-                        />
-                      ))}
-                    </View>
-                  ))}
-                  {[
-                    ["AC", "⌫"],
-                    ["(", ")"],
-                  ].map((row, rowIndex) => (
-                    <View
-                      key={`imperial-right-controls-${rowIndex}`}
-                      className="flex-row justify-between"
-                      style={{ height: imperialKeyHeight }}
-                    >
-                      {row.map((key) => {
-                        const isDanger = key === "AC" || key === "⌫";
-                        return (
-                          <KeyButton
-                            key={key}
-                            label={key}
-                            onPress={() => handleKey(key)}
-                            variant={isDanger ? "danger" : "default"}
-                            style={{ width: imperialWideKeyWidth, height: imperialKeyHeight }}
-                            textClassName={getKeyTextClass(key)}
-                          />
-                        );
-                      })}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-            <View
-              className="flex-row"
-              style={{ height: imperialKeyHeight * 2 + keypadGap, gap: keypadGap }}
-            >
-              <View style={{ width: opsKeyWidth * 3 + keypadGap * 2 }}>
-                <View
-                  className="flex-row justify-between"
-                  style={{ height: imperialKeyHeight }}
-                >
-                  {["÷", "×", "−"].map((key) => (
-                    <KeyButton
-                      key={key}
-                      label={key}
-                      onPress={() => handleKey(key)}
-                      variant="op"
-                      style={{ width: opsKeyWidth, height: imperialKeyHeight }}
-                      textClassName={getKeyTextClass(key)}
-                    />
-                  ))}
-                </View>
-                <KeyButton
-                  label="="
-                  onPress={() => handleKey("=")}
-                  variant="eq"
-                  style={{
-                    width: opsKeyWidth * 3 + keypadGap * 2,
-                    height: imperialKeyHeight,
-                    marginTop: keypadGap,
-                  }}
-                  textClassName={getKeyTextClass("=")}
-                />
-              </View>
-              <KeyButton
-                label="+"
-                onPress={() => handleKey("+")}
-                variant="op"
-                style={{ width: opsKeyWidth, height: imperialKeyHeight * 2 + keypadGap }}
-                textClassName={getKeyTextClass("+")}
-              />
-            </View>
-          </View>
+          <ImperialKeypad
+            keypadHeight={keypadHeight}
+            keypadGap={keypadGap}
+            imperialKeyHeight={imperialKeyHeight}
+            imperialKeyWidth={imperialKeyWidth}
+            imperialLeftWidth={imperialLeftWidth}
+            imperialRightWidth={imperialRightWidth}
+            imperialWideKeyWidth={imperialWideKeyWidth}
+            imperialBlockHeight={imperialBlockHeight}
+            leftKeyWidth={leftKeyWidth}
+            middleDividerTotal={middleDividerTotal}
+            middleDividerWidth={middleDividerWidth}
+            horizontalDividerTotal={horizontalDividerTotal}
+            opsKeyWidth={opsKeyWidth}
+            onKeyPress={handleKey}
+            onFractionDigit={handleFractionDigit}
+            onDenominator={handleDenominator}
+            getKeyTextClass={getKeyTextClass}
+            KeyButton={KeyButton}
+          />
         </View>
       )}
 
