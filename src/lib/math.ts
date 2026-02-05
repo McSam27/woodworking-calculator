@@ -1,6 +1,6 @@
 export type Fraction = { num: number; den: number };
 
-export type UnitSystem = "imperial" | "imperial-inches" | "metric";
+export type UnitSystem = "imperial" | "imperial-inches" | "metric" | "metric-cm";
 export type MetricUnit = "mm" | "cm";
 
 const INCHES_PER_FOOT = 12;
@@ -150,6 +150,7 @@ export const evaluateExpression = (
   expr: string,
   unitSystem: UnitSystem
 ): EvalResult => {
+  const isMetric = unitSystem === "metric" || unitSystem === "metric-cm";
   const tokens = tokenize(expr);
   if (tokens.length === 0) return { value: null, error: "Enter a valid expression" };
   let pos = 0;
@@ -169,7 +170,7 @@ export const evaluateExpression = (
     }
     if (t.type === "val") {
       consume();
-      return unitSystem === "metric"
+      return isMetric
         ? parseMetricValue(t.raw)
         : parseImperialValue(t.raw, (message) => {
             error ??= message;
@@ -277,7 +278,7 @@ export const formatResult = (
   precision: number,
   metricUnit: MetricUnit = "mm"
 ) =>
-  unitSystem === "metric"
+  unitSystem === "metric" || unitSystem === "metric-cm"
     ? formatMetric(frac, metricUnit)
     : unitSystem === "imperial-inches"
       ? formatImperialInches(frac, precision)

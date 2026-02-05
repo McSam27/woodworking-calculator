@@ -1,22 +1,35 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, StatusBar, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCalculator } from "../src/state/store";
 import { HistoryList } from "../src/components/HistoryList";
+import { formatImperial, inchesToMm, toDecimal } from "../src/lib/math";
 
 const KeyButton = ({
   label,
   onPress,
   variant = "default",
+  containerClassName,
+  style,
 }: {
   label: string;
   onPress: () => void;
   variant?: "default" | "op" | "eq" | "danger";
+  containerClassName?: string;
+  style?: React.ComponentProps<typeof Pressable>["style"];
 }) => {
   const base =
-    "flex-1 items-center justify-center rounded-xl py-8";
+    "items-center justify-center rounded-xl";
   const variants: Record<
     typeof variant,
     { container: string; text: string }
@@ -38,7 +51,8 @@ const KeyButton = ({
   return (
     <Pressable
       onPress={onPress}
-      className={`${base} ${variants[variant].container}`}
+      className={`${base} ${variants[variant].container} ${containerClassName ?? ""}`}
+      style={style}
     >
       <Text className={`text-4xl font-semibold ${variants[variant].text}`}>
         {label}
@@ -61,17 +75,18 @@ export default function CalculatorScreen() {
   const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
   const [showUnits, setShowUnits] = useState(false);
+  const insets = useSafeAreaInsets();
+  const isMetric =
+    state.settings.unitSystem === "metric" || state.settings.unitSystem === "metric-cm";
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+  const keypadGap = 8;
+  const keypadPaddingX = 12;
+  const keypadHeight = Math.round(screenHeight * 0.6);
+  const keyWidth = (screenWidth - keypadPaddingX * 2 - keypadGap * 3) / 4;
+  const keyHeight = (keypadHeight - keypadGap * 4) / 5;
 
   const keys = useMemo(() => {
-    if (state.settings.unitSystem === "metric") {
-      return [
-        ["AC", "⌫", "()", "÷"],
-        ["7", "8", "9", "×"],
-        ["4", "5", "6", "−"],
-        ["1", "2", "3", "+"],
-        ["", "0", ".", "="],
-      ];
-    }
+    if (isMetric) return [];
     return [
       ["AC", "⌫", "()", "÷"],
       ["7", "8", "9", "×"],
@@ -79,7 +94,7 @@ export default function CalculatorScreen() {
       ["1", "2", "3", "+"],
       ["0", "'", "\"", "="],
     ];
-  }, [state.settings.unitSystem]);
+  }, [isMetric]);
   const fractionKeys = ["1/2", "1/4", "1/8", "1/16", "/", "Space"];
 
   useEffect(() => {
@@ -88,6 +103,12 @@ export default function CalculatorScreen() {
     return () => clearTimeout(timer);
   }, [state.showSaveToast, dispatch]);
 
+  const showConversions = Boolean(state.result && !state.error && state.resultFrac);
+  const inches = showConversions && state.resultFrac ? toDecimal(state.resultFrac) : 0;
+  const mm = inchesToMm(inches);
+  const cm = mm / 10;
+  const formatFixed = (value: number, decimals = 2) =>
+    value.toFixed(decimals).replace(/\.?0+$/, "");
 
   const handleKey = (k: string) => {
     if (k === "AC") dispatch({ type: "CLEAR" });
@@ -121,12 +142,15 @@ export default function CalculatorScreen() {
       ? "ft-in"
       : state.settings.unitSystem === "imperial-inches"
         ? "in"
-        : "mm/cm";
+        : state.settings.unitSystem === "metric-cm"
+          ? "cm"
+          : "mm";
 
   const unitOptions = [
     { key: "imperial", label: "Imperial", sub: "ft-in" },
     { key: "imperial-inches", label: "Inches", sub: "in" },
-    { key: "metric", label: "Metric", sub: "mm/cm" },
+    { key: "metric", label: "Metric mm", sub: "mm" },
+    { key: "metric-cm", label: "Metric cm", sub: "cm" },
   ] as const;
 
   return (
@@ -178,86 +202,188 @@ export default function CalculatorScreen() {
         </View>
       </View>
 
-      <View className="min-h-[110px] justify-end bg-white px-4 py-4 dark:bg-zinc-900">
-        <View className="min-h-[28px] flex-row flex-wrap items-center justify-end">
-          {state.expr ? (
-            <Text className="w-full text-right text-[48px] text-zinc-800 dark:text-zinc-200">
-              {state.expr}
-              {!state.result && <Text className="text-zinc-600 dark:text-zinc-400">|</Text>}
-            </Text>
-          ) : null}
-        </View>
-        {state.result && (
-          <View className="mt-2 flex-row items-center justify-end gap-2">
-            <Text
-              className={`font-mono text-3xl font-bold ${
-                state.error
-                  ? "text-red-500"
-                  : "text-amber-600 dark:text-amber-400"
-              }`}
-            >
-              = {state.result}
-            </Text>
-            {!state.error && state.settings.unitSystem === "metric" && (
-              <View className="rounded-full bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800">
-                <Text className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">
-                  Metric
+      <View className="min-h-[110px] bg-white dark:bg-zinc-900">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          className="max-h-[220px]"
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+        >
+          <View className="flex-row gap-3">
+            {showConversions && state.resultFrac && (
+              <View className="w-1/3 rounded-xl bg-zinc-50 px-3 py-3 dark:bg-zinc-950">
+                <Text className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Conversions
                 </Text>
+                <View className="mt-2 gap-1.5">
+                  <Text className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                    {formatImperial(state.resultFrac, state.settings.fractionPrecision)}
+                  </Text>
+                  <Text className="text-sm text-zinc-700 dark:text-zinc-200">
+                    {formatFixed(inches, 3)} in
+                  </Text>
+                  <Text className="text-sm text-zinc-700 dark:text-zinc-200">
+                    {formatFixed(mm, 2)} mm
+                  </Text>
+                  <Text className="text-sm text-zinc-700 dark:text-zinc-200">
+                    {formatFixed(cm, 2)} cm
+                  </Text>
+                </View>
               </View>
             )}
-          </View>
-        )}
-        {state.result &&
-          !state.error &&
-          !state.settings.autoSave &&
-          state.lastEntry && (
-            <View className="mt-2 flex-row justify-end">
-              <Pressable
-                onPress={() => dispatch({ type: "SAVE_MANUAL" })}
-                className="rounded-lg bg-amber-600 px-4 py-2"
-              >
-                <Text className="text-xs font-semibold text-white">Save</Text>
-              </Pressable>
+            <View className={showConversions ? "w-2/3" : "flex-1"}>
+              <View className="min-h-[28px] flex-row flex-wrap items-center justify-end">
+                {state.expr ? (
+                  <Text className="w-full text-right text-[48px] text-zinc-800 dark:text-zinc-200">
+                    {state.expr}
+                    {!state.result && (
+                      <Text className="text-zinc-600 dark:text-zinc-400">|</Text>
+                    )}
+                  </Text>
+                ) : null}
+              </View>
+              {state.result && (
+                <View className="mt-2 flex-row items-center justify-end gap-2">
+                  <Text
+                    className={`text-3xl font-bold ${
+                      state.error
+                        ? "text-red-500"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
+                    = {state.result}
+                  </Text>
+                </View>
+              )}
+              {state.result &&
+                !state.error &&
+                !state.settings.autoSave &&
+                state.lastEntry && (
+                  <View className="mt-2 flex-row justify-end">
+                    <Pressable
+                      onPress={() => dispatch({ type: "SAVE_MANUAL" })}
+                      className="rounded-lg bg-amber-600 px-4 py-2"
+                    >
+                      <Text className="text-xs font-semibold text-white">Save</Text>
+                    </Pressable>
+                  </View>
+                )}
             </View>
-          )}
-      </View>
-
-      <View className="flex-row gap-2 px-3 py-2">
-        {fractionKeys.map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => handleFraction(key)}
-            className="flex-1 rounded-lg bg-amber-100 py-3 dark:bg-amber-950"
-          >
-            <Text className="text-center text-sm font-semibold text-amber-800 dark:text-amber-200">
-              {key}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <View className="flex-1 gap-2 px-3 pb-2">
-        {keys.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} className="flex-1 flex-row gap-2">
-            {row.map((key, idx) => {
-              if (!key) {
-                return <View key={`spacer-${idx}`} className="flex-1" />;
-              }
-              const isOp = ["÷", "×", "−", "+"].includes(key);
-              const isEq = key === "=";
-              const isDanger = key === "AC" || key === "⌫";
-              return (
-                <KeyButton
-                  key={key}
-                  label={key}
-                  onPress={() => handleKey(key)}
-                  variant={isEq ? "eq" : isOp ? "op" : isDanger ? "danger" : "default"}
-                />
-              );
-            })}
           </View>
-        ))}
+        </ScrollView>
       </View>
+
+      {!isMetric && (
+        <View className="flex-row gap-2 px-3 py-2">
+          {fractionKeys.map((key) => (
+            <Pressable
+              key={key}
+              onPress={() => handleFraction(key)}
+              className="flex-1 rounded-lg bg-amber-100 py-3 dark:bg-amber-950"
+            >
+              <Text className="text-center text-sm font-semibold text-amber-800 dark:text-amber-200">
+                {key}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {isMetric ? (
+        <View className="flex-1 justify-end" style={{ paddingBottom: Math.max(insets.bottom / 2, 6) }}>
+          <View
+            className="flex-row gap-2 px-3 pb-2"
+            style={{ height: keypadHeight }}
+          >
+          <View className="flex-[3] gap-2">
+            {[
+              ["AC", "⌫", "()"],
+              ["7", "8", "9"],
+              ["4", "5", "6"],
+              ["1", "2", "3"],
+              ["0", ".", "="],
+            ].map((row, rowIndex) => (
+              <View
+                key={`metric-row-${rowIndex}`}
+                className="flex-row justify-between"
+                style={{ height: keyHeight }}
+              >
+                {row.map((key) => {
+                  const isEq = key === "=";
+                  const isDanger = key === "AC" || key === "⌫";
+                  return (
+                    <KeyButton
+                      key={key}
+                      label={key}
+                      onPress={() => handleKey(key)}
+                      variant={isEq ? "eq" : isDanger ? "danger" : "default"}
+                      style={{ width: keyWidth, height: keyHeight }}
+                    />
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+          <View className="flex-1 gap-2 items-end">
+            {[
+              { label: "÷", flex: 1 },
+              { label: "×", flex: 1 },
+              { label: "−", flex: 1 },
+              { label: "+", flex: 2 },
+            ].map((op) => (
+              <View
+                key={op.label}
+                style={{ height: op.flex === 2 ? keyHeight * 2 + keypadGap : keyHeight }}
+              >
+                <KeyButton
+                  label={op.label}
+                  onPress={() => handleKey(op.label)}
+                  variant="op"
+                  style={{
+                    width: keyWidth,
+                    height: op.flex === 2 ? keyHeight * 2 + keypadGap : keyHeight,
+                  }}
+                />
+              </View>
+            ))}
+          </View>
+          </View>
+        </View>
+      ) : (
+        <View className="flex-1 justify-end" style={{ paddingBottom: Math.max(insets.bottom / 2, 6) }}>
+          <View className="gap-2 px-3 pb-2" style={{ height: keypadHeight }}>
+            {keys.map((row, rowIndex) => (
+              <View
+                key={`row-${rowIndex}`}
+                className="flex-row justify-between"
+                style={{ height: keyHeight }}
+              >
+                {row.map((key, idx) => {
+                  if (!key) {
+                    return (
+                      <View
+                        key={`spacer-${idx}`}
+                        style={{ width: keyWidth, height: keyHeight }}
+                      />
+                    );
+                  }
+                  const isOp = ["÷", "×", "−", "+"].includes(key);
+                  const isEq = key === "=";
+                  const isDanger = key === "AC" || key === "⌫";
+                  return (
+                    <KeyButton
+                      key={key}
+                      label={key}
+                      onPress={() => handleKey(key)}
+                      variant={isEq ? "eq" : isOp ? "op" : isDanger ? "danger" : "default"}
+                      style={{ width: keyWidth, height: keyHeight }}
+                    />
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       <Modal transparent visible={showHistory} animationType="slide">
         <Pressable

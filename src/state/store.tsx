@@ -109,7 +109,9 @@ const reducer = (state: State, action: Action): State => {
       };
     case "EVAL": {
       if (!state.expr.trim()) return state;
-      const evaluation = evaluateExpression(state.expr, state.settings.unitSystem);
+      const evalUnitSystem =
+        state.settings.unitSystem === "metric-cm" ? "metric" : state.settings.unitSystem;
+      const evaluation = evaluateExpression(state.expr, evalUnitSystem);
       if (!evaluation.value) {
         const message = evaluation.error ?? "Enter a valid expression";
         return {
@@ -121,7 +123,11 @@ const reducer = (state: State, action: Action): State => {
       }
       const frac = evaluation.value;
       const metricUnit: MetricUnit =
-        state.settings.unitSystem === "metric" && /cm\b/i.test(state.expr) ? "cm" : "mm";
+        state.settings.unitSystem === "metric-cm"
+          ? "cm"
+          : state.settings.unitSystem === "metric" && /cm\b/i.test(state.expr)
+            ? "cm"
+            : "mm";
       const formatted = formatResult(
         frac,
         state.settings.unitSystem,
