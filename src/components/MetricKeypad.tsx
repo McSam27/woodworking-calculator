@@ -6,6 +6,7 @@ type KeyButtonProps = {
   label: string;
   onPress: () => void;
   variant?: "default" | "op" | "eq" | "danger";
+  containerClassName?: string;
   textClassName?: string;
   style?: React.ComponentProps<typeof Pressable>["style"];
 };

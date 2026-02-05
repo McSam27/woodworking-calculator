@@ -6,6 +6,7 @@ type KeyButtonProps = {
   label: string;
   onPress: () => void;
   variant?: "default" | "op" | "eq" | "danger";
+  containerClassName?: string;
   textClassName?: string;
   style?: React.ComponentProps<typeof Pressable>["style"];
 };
@@ -50,8 +51,10 @@ export const ImperialKeypad = ({
   onDenominator,
   getKeyTextClass,
   KeyButton,
-}: Props) => (
-  <View className="gap-2 px-3 pb-2" style={{ height: keypadHeight }}>
+}: Props) => {
+  const wholeNumberClass = "bg-zinc-200 dark:bg-zinc-900";
+  return (
+    <View className="gap-2 px-3 pb-2" style={{ height: keypadHeight }}>
     <View className="flex-row items-start">
       <View style={{ width: imperialLeftWidth }}>
         <View className="gap-2">
@@ -70,6 +73,7 @@ export const ImperialKeypad = ({
                   key={key}
                   label={key}
                   onPress={() => onKeyPress(key)}
+                  containerClassName={wholeNumberClass}
                   style={{ width: leftKeyWidth, height: imperialKeyHeight }}
                   textClassName={getKeyTextClass(key)}
                 />
@@ -94,6 +98,7 @@ export const ImperialKeypad = ({
                 <KeyButton
                   label={row[0]}
                   onPress={() => onKeyPress(row[0])}
+                  containerClassName={wholeNumberClass}
                   style={{ width: imperialLeftWidth, height: imperialKeyHeight }}
                   textClassName={getKeyTextClass(row[0])}
                 />
@@ -103,6 +108,7 @@ export const ImperialKeypad = ({
                     key={key}
                     label={key}
                     onPress={() => onKeyPress(key)}
+                    containerClassName={wholeNumberClass}
                     style={{ width: leftKeyWidth, height: imperialKeyHeight }}
                     textClassName={getKeyTextClass(key)}
                   />
@@ -231,5 +237,6 @@ export const ImperialKeypad = ({
         textClassName={getKeyTextClass("+")}
       />
     </View>
-  </View>
-);
+    </View>
+  );
+};
