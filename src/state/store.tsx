@@ -39,7 +39,6 @@ type State = {
   history: CalculationRecord[];
   settings: Settings;
   lastEntry: CalculationRecord | null;
-  showSaveToast: boolean;
 };
 
 type Action =
@@ -49,7 +48,6 @@ type Action =
   | { type: "BACKSPACE" }
   | { type: "EVAL" }
   | { type: "SAVE_MANUAL" }
-  | { type: "HIDE_TOAST" }
   | { type: "TOGGLE_FAV"; id: string }
   | { type: "DELETE"; id: string }
   | { type: "CLEAR_ALL" }
@@ -77,7 +75,6 @@ const initialState: State = {
   history: [],
   settings: initialSettings,
   lastEntry: null,
-  showSaveToast: false,
 };
 
 const deriveInputUnit = (expression: string, unitSystem: UnitSystem) => {
@@ -97,7 +94,6 @@ const reducer = (state: State, action: Action): State => {
         result: null,
         error: null,
         resultFrac: null,
-        showSaveToast: false,
       };
     case "SET_EXPR":
       return {
@@ -106,7 +102,6 @@ const reducer = (state: State, action: Action): State => {
         result: null,
         error: null,
         resultFrac: null,
-        showSaveToast: false,
       };
     case "CLEAR":
       return {
@@ -116,7 +111,6 @@ const reducer = (state: State, action: Action): State => {
         error: null,
         resultFrac: null,
         lastEntry: null,
-        showSaveToast: false,
       };
     case "BACKSPACE":
       return {
@@ -124,7 +118,6 @@ const reducer = (state: State, action: Action): State => {
         expr: state.expr.slice(0, -1),
         result: null,
         error: null,
-        showSaveToast: false,
       };
     case "EVAL": {
       if (!state.expr.trim()) return state;
@@ -174,7 +167,6 @@ const reducer = (state: State, action: Action): State => {
           resultFrac: frac,
           history: [entry, ...state.history],
           lastEntry: null,
-          showSaveToast: true,
         };
       }
       return {
@@ -183,7 +175,6 @@ const reducer = (state: State, action: Action): State => {
         error: null,
         resultFrac: frac,
         lastEntry: entry,
-        showSaveToast: false,
       };
     }
     case "SAVE_MANUAL":
@@ -192,10 +183,7 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         history: [state.lastEntry, ...state.history],
         lastEntry: null,
-        showSaveToast: true,
       };
-    case "HIDE_TOAST":
-      return { ...state, showSaveToast: false };
     case "TOGGLE_FAV":
       return {
         ...state,

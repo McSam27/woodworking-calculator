@@ -67,15 +67,6 @@ const KeyButton = ({
   );
 };
 
-const SaveToast = ({ show }: { show: boolean }) => {
-  if (!show) return null;
-  return (
-    <View className="absolute left-1/2 top-14 z-50 -translate-x-1/2 flex-row items-center gap-2 rounded-full bg-emerald-700 px-4 py-2 shadow">
-      <Text className="text-xs font-semibold text-emerald-100">Saved</Text>
-    </View>
-  );
-};
-
 export default function CalculatorScreen() {
   const { state, dispatch } = useCalculator();
   const router = useRouter();
@@ -118,12 +109,6 @@ export default function CalculatorScreen() {
   const opsKeyWidth = (keypadWidth - keypadGap * 3) / 4;
   const imperialBlockHeight =
     imperialKeyHeight * 7 + keypadGap * 5 + horizontalDividerTotal;
-
-  useEffect(() => {
-    if (!state.showSaveToast) return;
-    const timer = setTimeout(() => dispatch({ type: "HIDE_TOAST" }), 1500);
-    return () => clearTimeout(timer);
-  }, [state.showSaveToast, dispatch]);
 
   const showConversions = Boolean(state.result && !state.error && state.resultFrac);
   const inches = showConversions && state.resultFrac ? toDecimal(state.resultFrac) : 0;
@@ -246,8 +231,6 @@ export default function CalculatorScreen() {
   return (
     <SafeAreaView className="flex-1 bg-zinc-50 dark:bg-zinc-950" edges={["top", "bottom"]}>
       <StatusBar barStyle="default" />
-      <SaveToast show={state.showSaveToast} />
-
       <View className="flex-row items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <View className="flex-row items-center gap-2">
           <Text className="text-lg font-bold text-amber-600">•</Text>
