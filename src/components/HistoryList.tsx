@@ -237,6 +237,11 @@ export const HistoryList = ({
         renderSectionHeader={({ section }) =>
           section.title ? <SectionLabel title={section.title} /> : null
         }
+        ListHeaderComponent={
+          <Text className="px-5 pb-2 text-xs text-zinc-500 dark:text-zinc-400">
+            Swipe left on an item to delete
+          </Text>
+        }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center px-6 py-16">
             <Text className="mt-3 text-base font-semibold text-zinc-700 dark:text-zinc-200">
@@ -248,11 +253,6 @@ export const HistoryList = ({
                 : "Start calculating to build your list!"}
             </Text>
           </View>
-        }
-        ListFooterComponent={
-          <Text className="px-5 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
-            Swipe left on an item to name or delete
-          </Text>
         }
         stickySectionHeadersEnabled={false}
         className="flex-1 pb-6"

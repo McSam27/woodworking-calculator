@@ -404,14 +404,12 @@ export default function CalculatorScreen() {
       )}
 
       <Modal transparent visible={showHistory} animationType="slide">
-        <Pressable
-          onPress={() => setShowHistory(false)}
-          className="flex-1 bg-black/40"
-        >
+        <View className="flex-1 bg-black/40">
           <Pressable
-            onPress={(e) => e.stopPropagation()}
-            className="mt-16 flex-1 rounded-t-3xl bg-zinc-50 dark:bg-zinc-950"
-          >
+            onPress={() => setShowHistory(false)}
+            className="absolute inset-0"
+          />
+          <View className="mt-16 flex-1 rounded-t-3xl bg-zinc-50 dark:bg-zinc-950">
             <View className="flex-row items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
               <Text className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                 Saved Measurements
@@ -430,19 +428,17 @@ export default function CalculatorScreen() {
               onSetDescription={(id, desc) => dispatch({ type: "SET_DESC", id, desc })}
               precision={state.settings.fractionPrecision}
             />
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <Modal transparent visible={showUnits} animationType="fade">
-        <Pressable
-          onPress={() => setShowUnits(false)}
-          className="flex-1 bg-black/20"
-        >
+        <View className="flex-1 bg-black/20">
           <Pressable
-            onPress={(e) => e.stopPropagation()}
-            className="ml-4 mt-16 w-44 rounded-2xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
-          >
+            onPress={() => setShowUnits(false)}
+            className="absolute inset-0"
+          />
+          <View className="ml-4 mt-16 w-44 rounded-2xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
             <Text className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               Units
             </Text>
@@ -480,8 +476,8 @@ export default function CalculatorScreen() {
                 </Pressable>
               );
             })}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
