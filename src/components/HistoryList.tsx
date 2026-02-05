@@ -214,7 +214,7 @@ export const HistoryList = ({
 
   return (
     <View className="flex-1">
-      <View className="flex-row items-center gap-2 px-5 pt-4">
+      <View className="flex-row items-center gap-2 p-5">
         {(["all", "favorites"] as const).map((tab) => {
           const selected = activeTab === tab;
           return (
@@ -251,7 +251,7 @@ export const HistoryList = ({
             </Text>
             <Text className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {activeTab === "favorites"
-                ? "Tap the heart to favorite a measurement."
+                ? "Tap the heart on any measurement in All to add it here."
                 : "Start calculating to build your list!"}
             </Text>
           </View>
