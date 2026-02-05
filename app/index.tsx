@@ -82,6 +82,7 @@ export default function CalculatorScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const [showUnits, setShowUnits] = useState(false);
   const fractionEntry = React.useRef(false);
+  const justEvaluated = React.useRef(false);
   const insets = useSafeAreaInsets();
   const isMetric =
     state.settings.unitSystem === "metric" || state.settings.unitSystem === "metric-cm";
@@ -133,26 +134,52 @@ export default function CalculatorScreen() {
 
   const handleKey = (k: string) => {
     fractionEntry.current = false;
+    const operators = ["+", "-", "−", "×", "÷"];
+    const isOperator = operators.includes(k);
     if (k === "AC") dispatch({ type: "CLEAR" });
     else if (k === "⌫") dispatch({ type: "BACKSPACE" });
-    else if (k === "=") dispatch({ type: "EVAL" });
+    else if (k === "=") {
+      justEvaluated.current = true;
+      dispatch({ type: "EVAL" });
+    }
     else if (k === "()") {
       const open = (state.expr.match(/\(/g) || []).length;
       const close = (state.expr.match(/\)/g) || []).length;
-      dispatch({ type: "INPUT", val: open > close ? ")" : "(" });
+      if (justEvaluated.current) {
+        justEvaluated.current = false;
+        dispatch({ type: "SET_EXPR", val: open > close ? ")" : "(" });
+      } else {
+        dispatch({ type: "INPUT", val: open > close ? ")" : "(" });
+      }
     } else {
-      dispatch({ type: "INPUT", val: k });
+      if (justEvaluated.current && !isOperator) {
+        justEvaluated.current = false;
+        dispatch({ type: "SET_EXPR", val: k });
+      } else {
+        justEvaluated.current = false;
+        dispatch({ type: "INPUT", val: k });
+      }
     }
   };
 
   const handleFractionDigit = (value: string) => {
     fractionEntry.current = true;
+    if (justEvaluated.current) {
+      justEvaluated.current = false;
+      dispatch({ type: "SET_EXPR", val: value });
+      return;
+    }
     const lastChar = state.expr.slice(-1);
     const autoSpace = /\d/.test(lastChar);
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
   };
 
   const handleDenominator = (den: string) => {
+    if (justEvaluated.current) {
+      justEvaluated.current = false;
+      dispatch({ type: "SET_EXPR", val: `1/${den}` });
+      return;
+    }
     const expr = state.expr;
     const operators = ["+", "-", "−", "×", "÷", "(", ")"];
     const lastOpIndex = Math.max(
