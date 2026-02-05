@@ -65,7 +65,7 @@ export default function CalculatorScreen() {
   const keys = useMemo(() => {
     if (state.settings.unitSystem === "metric") {
       return [
-        ["C", "⌫", "()", "÷"],
+        ["AC", "⌫", "()", "÷"],
         ["7", "8", "9", "×"],
         ["4", "5", "6", "−"],
         ["1", "2", "3", "+"],
@@ -73,7 +73,7 @@ export default function CalculatorScreen() {
       ];
     }
     return [
-      ["C", "⌫", "()", "÷"],
+      ["AC", "⌫", "()", "÷"],
       ["7", "8", "9", "×"],
       ["4", "5", "6", "−"],
       ["1", "2", "3", "+"],
@@ -90,7 +90,7 @@ export default function CalculatorScreen() {
 
 
   const handleKey = (k: string) => {
-    if (k === "C") dispatch({ type: "CLEAR" });
+    if (k === "AC") dispatch({ type: "CLEAR" });
     else if (k === "⌫") dispatch({ type: "BACKSPACE" });
     else if (k === "=") dispatch({ type: "EVAL" });
     else if (k === "()") {
@@ -179,17 +179,13 @@ export default function CalculatorScreen() {
       </View>
 
       <View className="min-h-[110px] justify-end bg-white px-4 py-4 dark:bg-zinc-900">
-        <View className="min-h-[28px] flex-row flex-wrap items-center">
+        <View className="min-h-[28px] flex-row flex-wrap items-center justify-end">
           {state.expr ? (
-            <Text className="font-mono text-2xl text-zinc-800 dark:text-zinc-200">
+            <Text className="w-full text-right text-[48px] text-zinc-800 dark:text-zinc-200">
               {state.expr}
               {!state.result && <Text className="text-zinc-600 dark:text-zinc-400">|</Text>}
             </Text>
-          ) : (
-            <Text className="text-base text-zinc-400 dark:text-zinc-600">
-              Enter measurement...
-            </Text>
-          )}
+          ) : null}
         </View>
         {state.result && (
           <View className="mt-2 flex-row items-center justify-end gap-2">
@@ -249,7 +245,7 @@ export default function CalculatorScreen() {
               }
               const isOp = ["÷", "×", "−", "+"].includes(key);
               const isEq = key === "=";
-              const isDanger = key === "C" || key === "⌫";
+              const isDanger = key === "AC" || key === "⌫";
               return (
                 <KeyButton
                   key={key}
