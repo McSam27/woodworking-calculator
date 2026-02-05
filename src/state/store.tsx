@@ -43,6 +43,7 @@ type State = {
 
 type Action =
   | { type: "INPUT"; val: string }
+  | { type: "SET_EXPR"; val: string }
   | { type: "CLEAR" }
   | { type: "BACKSPACE" }
   | { type: "EVAL" }
@@ -84,6 +85,15 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         expr: state.expr + action.val,
+        result: null,
+        error: null,
+        resultFrac: null,
+        showSaveToast: false,
+      };
+    case "SET_EXPR":
+      return {
+        ...state,
+        expr: action.val,
         result: null,
         error: null,
         resultFrac: null,

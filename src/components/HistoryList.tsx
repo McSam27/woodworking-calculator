@@ -113,18 +113,12 @@ export const HistoryList = ({
               placeholderTextColor="#71717a"
               autoFocus
               maxLength={60}
-              className="flex-1 rounded-lg border border-amber-500 bg-white px-3 text-sm text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
-              style={{
-                height: 40,
-                lineHeight: 20,
-                textAlignVertical: "center",
-                paddingVertical: Platform.OS === "ios" ? 8 : 0,
-              }}
+              className="h-10 flex-1 rounded-lg border border-amber-500 bg-white px-2 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
             />
-            <Pressable onPress={() => saveEdit(item.id)} className="rounded-lg bg-amber-600 px-3 py-2">
+            <Pressable onPress={() => saveEdit(item.id)} className="h-10 w-10 items-center justify-center rounded-lg bg-amber-600">
               <Ionicons name="checkmark" size={16} color="#ffffff" />
             </Pressable>
-            <Pressable onPress={cancelEdit} className="rounded-lg bg-zinc-200 px-3 py-2 dark:bg-zinc-800">
+            <Pressable onPress={cancelEdit} className="h-10 w-10 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800">
               <Ionicons name="close" size={16} color="#3f3f46" />
             </Pressable>
           </View>
@@ -134,7 +128,7 @@ export const HistoryList = ({
               className={`text-base font-semibold ${
                 item.description
                   ? "text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-400 dark:text-zinc-500"
+                  : "text-zinc-300 dark:text-zinc-600"
               }`}
             >
               {item.description ?? "Add description"}

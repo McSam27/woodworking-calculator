@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Modal,
@@ -20,12 +20,14 @@ const KeyButton = ({
   onPress,
   variant = "default",
   containerClassName,
+  textClassName,
   style,
 }: {
   label: string;
   onPress: () => void;
   variant?: "default" | "op" | "eq" | "danger";
   containerClassName?: string;
+  textClassName?: string;
   style?: React.ComponentProps<typeof Pressable>["style"];
 }) => {
   const base =
@@ -54,7 +56,9 @@ const KeyButton = ({
       className={`${base} ${variants[variant].container} ${containerClassName ?? ""}`}
       style={style}
     >
-      <Text className={`text-4xl font-semibold ${variants[variant].text}`}>
+      <Text
+        className={`text-4xl font-semibold ${variants[variant].text} ${textClassName ?? ""}`}
+      >
         {label}
       </Text>
     </Pressable>
@@ -82,20 +86,34 @@ export default function CalculatorScreen() {
   const keypadGap = 8;
   const keypadPaddingX = 12;
   const keypadHeight = Math.round(screenHeight * 0.6);
-  const keyWidth = (screenWidth - keypadPaddingX * 2 - keypadGap * 3) / 4;
-  const keyHeight = (keypadHeight - keypadGap * 4) / 5;
+  const metricCols = 4;
+  const metricRows = 5;
+  const metricKeyWidth =
+    (screenWidth - keypadPaddingX * 2 - keypadGap * (metricCols - 1)) / metricCols;
+  const metricKeyHeight =
+    (keypadHeight - keypadGap * (metricRows - 1)) / metricRows;
 
-  const keys = useMemo(() => {
-    if (isMetric) return [];
-    return [
-      ["AC", "⌫", "()", "÷"],
-      ["7", "8", "9", "×"],
-      ["4", "5", "6", "−"],
-      ["1", "2", "3", "+"],
-      ["0", "'", "\"", "="],
-    ];
-  }, [isMetric]);
-  const fractionKeys = ["1/2", "1/4", "1/8", "1/16", "/", "Space"];
+  const imperialRows = 9;
+  const middleDividerWidth = 3;
+  const middleDividerTotal = keypadGap;
+  const horizontalDividerTotal = middleDividerTotal;
+  const dividerExtra = horizontalDividerTotal - keypadGap;
+  const imperialKeyWidth =
+    (screenWidth -
+      keypadPaddingX * 2 -
+      middleDividerTotal -
+      keypadGap * 3) /
+    5;
+  const imperialKeyHeight =
+    (keypadHeight - keypadGap * (imperialRows - 1) - dividerExtra) / imperialRows;
+  const imperialLeftWidth = imperialKeyWidth * 2 + keypadGap;
+  const imperialRightWidth = imperialKeyWidth * 3 + keypadGap * 2;
+  const leftKeyWidth = imperialKeyWidth;
+  const imperialWideKeyWidth = (imperialRightWidth - keypadGap) / 2;
+  const keypadWidth = screenWidth - keypadPaddingX * 2;
+  const opsKeyWidth = (keypadWidth - keypadGap * 3) / 4;
+  const imperialBlockHeight =
+    imperialKeyHeight * 7 + keypadGap * 5 + horizontalDividerTotal;
 
   useEffect(() => {
     if (!state.showSaveToast) return;
@@ -123,18 +141,48 @@ export default function CalculatorScreen() {
     }
   };
 
-  const handleFraction = (value: string) => {
-    if (value === "Space") {
-      dispatch({ type: "INPUT", val: " " });
-      return;
-    }
-    if (value === "/") {
-      dispatch({ type: "INPUT", val: "/" });
-      return;
-    }
+  const handleFractionDigit = (value: string) => {
     const lastChar = state.expr.slice(-1);
     const autoSpace = /\d/.test(lastChar);
     dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}${value}` });
+  };
+
+  const handleDenominator = (den: string) => {
+    const expr = state.expr;
+    const operators = ["+", "-", "−", "×", "÷", "(", ")"];
+    const lastOpIndex = Math.max(
+      ...operators.map((op) => expr.lastIndexOf(op))
+    );
+    const token = expr.slice(lastOpIndex + 1);
+    const tokenTrim = token.trim();
+    const slashIndex = token.lastIndexOf("/");
+
+    if (slashIndex >= 0) {
+      const tokenBase = token.slice(0, slashIndex + 1);
+      const nextExpr = `${expr.slice(0, lastOpIndex + 1)}${tokenBase}${den}`;
+      dispatch({ type: "SET_EXPR", val: nextExpr });
+      return;
+    }
+
+    if (/^\d+$/.test(tokenTrim)) {
+      dispatch({ type: "INPUT", val: ` 1/${den}` });
+      return;
+    }
+
+    if (/\d$/.test(tokenTrim)) {
+      dispatch({ type: "INPUT", val: `/${den}` });
+      return;
+    }
+
+    const lastChar = expr.slice(-1);
+    const autoSpace = /\d/.test(lastChar);
+    dispatch({ type: "INPUT", val: `${autoSpace ? " " : ""}1/${den}` });
+  };
+
+  const getKeyTextClass = (label: string) => {
+    if (label.length >= 3) return "text-2xl";
+    if (label.length === 2) return "text-3xl";
+    return "text-4xl";
   };
 
   const unitLabel =
@@ -233,7 +281,11 @@ export default function CalculatorScreen() {
             <View className={showConversions ? "w-2/3" : "flex-1"}>
               <View className="min-h-[28px] flex-row flex-wrap items-center justify-end">
                 {state.expr ? (
-                  <Text className="w-full text-right text-[48px] text-zinc-800 dark:text-zinc-200">
+                  <Text
+                    className={`w-full text-right ${
+                      state.result ? "text-[32px]" : "text-[48px]"
+                    } text-zinc-800 dark:text-zinc-200`}
+                  >
                     {state.expr}
                     {!state.result && (
                       <Text className="text-zinc-600 dark:text-zinc-400">|</Text>
@@ -272,22 +324,6 @@ export default function CalculatorScreen() {
         </ScrollView>
       </View>
 
-      {!isMetric && (
-        <View className="flex-row gap-2 px-3 py-2">
-          {fractionKeys.map((key) => (
-            <Pressable
-              key={key}
-              onPress={() => handleFraction(key)}
-              className="flex-1 rounded-lg bg-amber-100 py-3 dark:bg-amber-950"
-            >
-              <Text className="text-center text-sm font-semibold text-amber-800 dark:text-amber-200">
-                {key}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-
       {isMetric ? (
         <View className="flex-1 justify-end" style={{ paddingBottom: Math.max(insets.bottom / 2, 6) }}>
           <View
@@ -305,7 +341,7 @@ export default function CalculatorScreen() {
               <View
                 key={`metric-row-${rowIndex}`}
                 className="flex-row justify-between"
-                style={{ height: keyHeight }}
+                style={{ height: metricKeyHeight }}
               >
                 {row.map((key) => {
                   const isEq = key === "=";
@@ -316,7 +352,8 @@ export default function CalculatorScreen() {
                       label={key}
                       onPress={() => handleKey(key)}
                       variant={isEq ? "eq" : isDanger ? "danger" : "default"}
-                      style={{ width: keyWidth, height: keyHeight }}
+                      style={{ width: metricKeyWidth, height: metricKeyHeight }}
+                      textClassName={getKeyTextClass(key)}
                     />
                   );
                 })}
@@ -332,16 +369,25 @@ export default function CalculatorScreen() {
             ].map((op) => (
               <View
                 key={op.label}
-                style={{ height: op.flex === 2 ? keyHeight * 2 + keypadGap : keyHeight }}
+                style={{
+                  height:
+                    op.flex === 2
+                      ? metricKeyHeight * 2 + keypadGap
+                      : metricKeyHeight,
+                }}
               >
                 <KeyButton
                   label={op.label}
                   onPress={() => handleKey(op.label)}
                   variant="op"
                   style={{
-                    width: keyWidth,
-                    height: op.flex === 2 ? keyHeight * 2 + keypadGap : keyHeight,
+                    width: metricKeyWidth,
+                    height:
+                      op.flex === 2
+                        ? metricKeyHeight * 2 + keypadGap
+                        : metricKeyHeight,
                   }}
+                  textClassName={getKeyTextClass(op.label)}
                 />
               </View>
             ))}
@@ -351,36 +397,188 @@ export default function CalculatorScreen() {
       ) : (
         <View className="flex-1 justify-end" style={{ paddingBottom: Math.max(insets.bottom / 2, 6) }}>
           <View className="gap-2 px-3 pb-2" style={{ height: keypadHeight }}>
-            {keys.map((row, rowIndex) => (
-              <View
-                key={`row-${rowIndex}`}
-                className="flex-row justify-between"
-                style={{ height: keyHeight }}
-              >
-                {row.map((key, idx) => {
-                  if (!key) {
-                    return (
-                      <View
-                        key={`spacer-${idx}`}
-                        style={{ width: keyWidth, height: keyHeight }}
-                      />
-                    );
-                  }
-                  const isOp = ["÷", "×", "−", "+"].includes(key);
-                  const isEq = key === "=";
-                  const isDanger = key === "AC" || key === "⌫";
-                  return (
+            <View className="flex-row items-start">
+              <View style={{ width: imperialLeftWidth }}>
+                <View className="gap-2">
+                  {[
+                    ["1", "2"],
+                    ["3", "4"],
+                    ["5", "6"],
+                  ].map((row, rowIndex) => (
+                    <View
+                      key={`imperial-left-top-${rowIndex}`}
+                      className="flex-row justify-between"
+                      style={{ height: imperialKeyHeight, width: imperialLeftWidth }}
+                    >
+                      {row.map((key) => (
+                        <KeyButton
+                          key={key}
+                          label={key}
+                          onPress={() => handleKey(key)}
+                          style={{ width: leftKeyWidth, height: imperialKeyHeight }}
+                          textClassName={getKeyTextClass(key)}
+                        />
+                      ))}
+                    </View>
+                  ))}
+                </View>
+                <View style={{ height: horizontalDividerTotal }} />
+                <View className="gap-2">
+                  {[
+                    ["7", "8"],
+                    ["9", "0"],
+                    [".", "'"],
+                    ["\""],
+                  ].map((row, rowIndex) => (
+                    <View
+                      key={`imperial-left-bottom-${rowIndex}`}
+                      className="flex-row justify-between"
+                      style={{ height: imperialKeyHeight, width: imperialLeftWidth }}
+                    >
+                      {row.length === 1 ? (
+                        <KeyButton
+                          label={row[0]}
+                          onPress={() => handleKey(row[0])}
+                          style={{ width: imperialLeftWidth, height: imperialKeyHeight }}
+                          textClassName={getKeyTextClass(row[0])}
+                        />
+                      ) : (
+                        row.map((key) => (
+                          <KeyButton
+                            key={key}
+                            label={key}
+                            onPress={() => handleKey(key)}
+                            style={{ width: leftKeyWidth, height: imperialKeyHeight }}
+                            textClassName={getKeyTextClass(key)}
+                          />
+                        ))
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <View style={{ width: middleDividerTotal, height: imperialBlockHeight }} />
+              <View style={{ width: imperialRightWidth }}>
+                <View className="gap-2">
+                  {[
+                    ["1", "2", "3"],
+                    ["4", "5", "6"],
+                    ["7", "8", "9"],
+                  ].map((row, rowIndex) => (
+                    <View
+                      key={`imperial-right-top-${rowIndex}`}
+                      className="flex-row justify-between"
+                      style={{ height: imperialKeyHeight }}
+                    >
+                      {row.map((key) => (
+                        <KeyButton
+                          key={key}
+                          label={key}
+                          onPress={() => handleFractionDigit(key)}
+                          style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
+                          textClassName={getKeyTextClass(key)}
+                        />
+                      ))}
+                    </View>
+                  ))}
+                </View>
+                <View
+                  className="items-center justify-center"
+                  style={{ height: horizontalDividerTotal }}
+                >
+                  <View
+                    className="rounded-full bg-zinc-300 dark:bg-zinc-700"
+                    style={{ height: middleDividerWidth, width: imperialRightWidth }}
+                  />
+                </View>
+                <View className="gap-2">
+                  {[
+                    ["2", "4", "8"],
+                    ["16", "32", "64"],
+                  ].map((row, rowIndex) => (
+                    <View
+                      key={`imperial-right-den-${rowIndex}`}
+                      className="flex-row justify-between"
+                      style={{ height: imperialKeyHeight }}
+                    >
+                      {row.map((key) => (
+                        <KeyButton
+                          key={key}
+                          label={key}
+                          onPress={() => handleDenominator(key)}
+                          style={{ width: imperialKeyWidth, height: imperialKeyHeight }}
+                          textClassName={getKeyTextClass(key)}
+                        />
+                      ))}
+                    </View>
+                  ))}
+                  {[
+                    ["AC", "⌫"],
+                    ["(", ")"],
+                  ].map((row, rowIndex) => (
+                    <View
+                      key={`imperial-right-controls-${rowIndex}`}
+                      className="flex-row justify-between"
+                      style={{ height: imperialKeyHeight }}
+                    >
+                      {row.map((key) => {
+                        const isDanger = key === "AC" || key === "⌫";
+                        return (
+                          <KeyButton
+                            key={key}
+                            label={key}
+                            onPress={() => handleKey(key)}
+                            variant={isDanger ? "danger" : "default"}
+                            style={{ width: imperialWideKeyWidth, height: imperialKeyHeight }}
+                            textClassName={getKeyTextClass(key)}
+                          />
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+            <View
+              className="flex-row"
+              style={{ height: imperialKeyHeight * 2 + keypadGap, gap: keypadGap }}
+            >
+              <View style={{ width: opsKeyWidth * 3 + keypadGap * 2 }}>
+                <View
+                  className="flex-row justify-between"
+                  style={{ height: imperialKeyHeight }}
+                >
+                  {["÷", "×", "−"].map((key) => (
                     <KeyButton
                       key={key}
                       label={key}
                       onPress={() => handleKey(key)}
-                      variant={isEq ? "eq" : isOp ? "op" : isDanger ? "danger" : "default"}
-                      style={{ width: keyWidth, height: keyHeight }}
+                      variant="op"
+                      style={{ width: opsKeyWidth, height: imperialKeyHeight }}
+                      textClassName={getKeyTextClass(key)}
                     />
-                  );
-                })}
+                  ))}
+                </View>
+                <KeyButton
+                  label="="
+                  onPress={() => handleKey("=")}
+                  variant="eq"
+                  style={{
+                    width: opsKeyWidth * 3 + keypadGap * 2,
+                    height: imperialKeyHeight,
+                    marginTop: keypadGap,
+                  }}
+                  textClassName={getKeyTextClass("=")}
+                />
               </View>
-            ))}
+              <KeyButton
+                label="+"
+                onPress={() => handleKey("+")}
+                variant="op"
+                style={{ width: opsKeyWidth, height: imperialKeyHeight * 2 + keypadGap }}
+                textClassName={getKeyTextClass("+")}
+              />
+            </View>
           </View>
         </View>
       )}
