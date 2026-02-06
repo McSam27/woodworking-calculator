@@ -102,20 +102,26 @@ const parseImperialValue = (
   return reduce(total);
 };
 
-const parseMetricValue = (raw: string): Fraction | null => {
+const parseMetricValue = (raw: string, baseUnit: MetricUnit): Fraction | null => {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) return null;
 
   const unitMatch = trimmed.match(/(mm|cm)\s*$/);
-  const unit = (unitMatch?.[1] ?? "mm") as MetricUnit;
+  const unit = (unitMatch?.[1] ?? baseUnit) as MetricUnit;
   const clean = trimmed.replace(/(mm|cm)\s*$/, "").replace(/[^\d.+-]/g, "");
   if (!clean) return null;
 
   const value = Number(clean);
   if (Number.isNaN(value)) return null;
-  const mm = unit === "cm" ? value * 10 : value;
-  const inches = mm / MM_PER_INCH;
-  return fractionFromDecimal(inches);
+
+  // Metric calculators should do math in the selected metric unit (mm or cm) without
+  // converting into inches first; imperial conversions can be computed afterward.
+  const f = fractionFromDecimal(value, 10000);
+  if (unit === baseUnit) return f;
+  // Convert to the selected base unit so mixed `mm`/`cm` tokens still work.
+  if (baseUnit === "mm" && unit === "cm") return mul(f, { num: 10, den: 1 });
+  if (baseUnit === "cm" && unit === "mm") return div(f, { num: 10, den: 1 }) ?? null;
+  return f;
 };
 
 type Token =
@@ -125,16 +131,19 @@ type Token =
 
 const tokenize = (expr: string): Token[] => {
   const tokens: Token[] = [];
-  const ops = ["+", "-", "−", "×", "÷"];
+  // Support common keyboard operators too (e.g. `9 x 9`, `9 * 9`).
+  const ops = ["+", "-", "−", "×", "÷", "*", "x", "X"];
   let buf = "";
   for (let i = 0; i < expr.length; i += 1) {
     const ch = expr[i];
     if (ops.includes(ch) || ch === "(" || ch === ")") {
       if (buf.trim()) tokens.push({ type: "val", raw: buf.trim() });
-      tokens.push({
-        type: ch === "(" || ch === ")" ? "paren" : "op",
-        raw: ch,
-      });
+      if (ch === "(" || ch === ")") {
+        tokens.push({ type: "paren", raw: ch });
+      } else {
+        const normalized = ch === "*" || ch === "x" || ch === "X" ? "×" : ch;
+        tokens.push({ type: "op", raw: normalized });
+      }
       buf = "";
     } else {
       buf += ch;
@@ -151,6 +160,7 @@ export const evaluateExpression = (
   unitSystem: UnitSystem
 ): EvalResult => {
   const isMetric = unitSystem === "metric" || unitSystem === "metric-cm";
+  const metricBaseUnit: MetricUnit = unitSystem === "metric-cm" ? "cm" : "mm";
   const tokens = tokenize(expr);
   if (tokens.length === 0) return { value: null, error: "Enter a valid expression" };
   let pos = 0;
@@ -171,7 +181,7 @@ export const evaluateExpression = (
     if (t.type === "val") {
       consume();
       return isMetric
-        ? parseMetricValue(t.raw)
+        ? parseMetricValue(t.raw, metricBaseUnit)
         : parseImperialValue(t.raw, (message) => {
             error ??= message;
           });
@@ -265,11 +275,19 @@ export const formatImperialInches = (frac: Fraction, precision: number) => {
   return `${sign}${whole}"`;
 };
 
-export const formatMetric = (frac: Fraction, unit: MetricUnit = "mm") => {
-  const inches = toDecimal(frac);
-  const mm = inches * MM_PER_INCH;
-  const value = unit === "cm" ? mm / 10 : mm;
-  return `${formatDecimal(value, 4)} ${unit}`;
+export const formatMetric = (
+  frac: Fraction,
+  outputUnit: MetricUnit = "mm",
+  baseUnit: MetricUnit = "mm"
+) => {
+  const baseValue = toDecimal(frac);
+  const value =
+    baseUnit === outputUnit
+      ? baseValue
+      : baseUnit === "mm" && outputUnit === "cm"
+        ? baseValue / 10
+        : baseValue * 10;
+  return `${formatDecimal(value, 4)} ${outputUnit}`;
 };
 
 export const formatResult = (
@@ -279,7 +297,7 @@ export const formatResult = (
   metricUnit: MetricUnit = "mm"
 ) =>
   unitSystem === "metric" || unitSystem === "metric-cm"
-    ? formatMetric(frac, metricUnit)
+    ? formatMetric(frac, metricUnit, unitSystem === "metric-cm" ? "cm" : "mm")
     : unitSystem === "imperial-inches"
       ? formatImperialInches(frac, precision)
       : formatImperial(frac, precision);

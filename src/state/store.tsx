@@ -121,9 +121,7 @@ const reducer = (state: State, action: Action): State => {
       };
     case "EVAL": {
       if (!state.expr.trim()) return state;
-      const evalUnitSystem =
-        state.settings.unitSystem === "metric-cm" ? "metric" : state.settings.unitSystem;
-      const evaluation = evaluateExpression(state.expr, evalUnitSystem);
+      const evaluation = evaluateExpression(state.expr, state.settings.unitSystem);
       if (!evaluation.value) {
         const message = evaluation.error ?? "Enter a valid expression";
         return {
@@ -135,11 +133,7 @@ const reducer = (state: State, action: Action): State => {
       }
       const frac = evaluation.value;
       const metricUnit: MetricUnit =
-        state.settings.unitSystem === "metric-cm"
-          ? "cm"
-          : state.settings.unitSystem === "metric" && /cm\b/i.test(state.expr)
-            ? "cm"
-            : "mm";
+        state.settings.unitSystem === "metric-cm" ? "cm" : "mm";
       const formatted = formatResult(
         frac,
         state.settings.unitSystem,
@@ -207,10 +201,29 @@ const reducer = (state: State, action: Action): State => {
     case "LOAD_STATE":
       return {
         ...state,
-        history: action.history.map((item) => ({
-          ...item,
-          inputUnit: item.inputUnit ?? deriveInputUnit(item.expression, item.unitSystem),
-        })),
+        history: action.history.map((item) => {
+          const inputUnit = item.inputUnit ?? deriveInputUnit(item.expression, item.unitSystem);
+          const isMetric = item.unitSystem === "metric" || item.unitSystem === "metric-cm";
+
+          // Back-compat: older versions stored `resultRaw` as inches even for metric entries.
+          // When possible, recover the metric numeric value from the formatted `result`.
+          let resultRaw = item.resultRaw;
+          if (isMetric && typeof item.result === "string") {
+            const m = item.result.match(/(-?\d+(?:\.\d+)?)\s*(mm|cm)\b/i);
+            if (m) {
+              const parsed = Number(m[1]);
+              const unit = m[2].toLowerCase() as "mm" | "cm";
+              const baseUnit = item.unitSystem === "metric-cm" ? "cm" : "mm";
+              if (!Number.isNaN(parsed)) {
+                if (unit === baseUnit) resultRaw = parsed;
+                else if (baseUnit === "mm" && unit === "cm") resultRaw = parsed * 10;
+                else if (baseUnit === "cm" && unit === "mm") resultRaw = parsed / 10;
+              }
+            }
+          }
+
+          return { ...item, inputUnit, resultRaw };
+        }),
         settings: action.settings,
       };
     default:

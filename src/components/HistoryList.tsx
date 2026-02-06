@@ -3,7 +3,14 @@ import { Platform, Pressable, SectionList, Text, TextInput, View } from "react-n
 import { Ionicons } from "@expo/vector-icons";
 import { Swipeable } from "react-native-gesture-handler";
 import type { CalculationRecord, Precision } from "../state/store";
-import { formatImperial, formatImperialInches, fractionFromDecimal, inchesToMm, toDecimal } from "../lib/math";
+import {
+  formatImperial,
+  formatImperialInches,
+  fractionFromDecimal,
+  inchesToMm,
+  mmToInches,
+  toDecimal,
+} from "../lib/math";
 import { timeAgo } from "../lib/time";
 
 type Props = {
@@ -97,10 +104,17 @@ export const HistoryList = ({
     value.toFixed(decimals).replace(/\.?0+$/, "");
 
   const renderItem = (item: CalculationRecord) => {
-    const inches = item.resultRaw;
+    const baseValue = item.resultRaw;
+    const isMetric = item.unitSystem === "metric" || item.unitSystem === "metric-cm";
+    const metricBaseUnit = item.unitSystem === "metric-cm" ? "cm" : "mm";
+    const mm = isMetric
+      ? metricBaseUnit === "cm"
+        ? baseValue * 10
+        : baseValue
+      : inchesToMm(baseValue);
+    const inches = isMetric ? mmToInches(mm) : baseValue;
     const frac = fractionFromDecimal(inches, 1000000);
     const displayFrac = fractionFromDecimal(inches, precision);
-    const mm = inchesToMm(inches);
     const cm = mm / 10;
     return (
     <SwipeRow key={item.id} onDelete={() => onDelete(item.id)} simultaneousHandlers={listRef}>

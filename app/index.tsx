@@ -16,7 +16,14 @@ import { HistoryList } from "../src/components/HistoryList";
 import { ImperialKeypad } from "../src/components/ImperialKeypad";
 import { MetricKeypad } from "../src/components/MetricKeypad";
 import { FractionText } from "../src/components/FractionText";
-import { formatImperial, formatImperialInches, fractionFromDecimal, inchesToMm, toDecimal } from "../src/lib/math";
+import {
+  formatImperial,
+  formatImperialInches,
+  fractionFromDecimal,
+  inchesToMm,
+  mmToInches,
+  toDecimal,
+} from "../src/lib/math";
 
 const KeyButton = ({
   label,
@@ -118,10 +125,16 @@ export default function CalculatorScreen() {
     imperialKeyHeight * 7 + keypadGap * 5 + horizontalDividerTotal;
 
   const showConversions = Boolean(state.result && !state.error && state.resultFrac);
-  const inches = showConversions && state.resultFrac ? toDecimal(state.resultFrac) : 0;
+  const baseValue = showConversions && state.resultFrac ? toDecimal(state.resultFrac) : 0;
+  const metricBaseUnit = state.settings.unitSystem === "metric-cm" ? "cm" : "mm";
+  const mm = isMetric
+    ? metricBaseUnit === "cm"
+      ? baseValue * 10
+      : baseValue
+    : inchesToMm(baseValue);
+  const inches = isMetric ? mmToInches(mm) : baseValue;
   const inchesFrac = fractionFromDecimal(inches, 1000000);
   const inchesDisplayFrac = fractionFromDecimal(inches, state.settings.fractionPrecision);
-  const mm = inchesToMm(inches);
   const cm = mm / 10;
   const formatFixed = (value: number, decimals = 2) =>
     value.toFixed(decimals).replace(/\.?0+$/, "");
@@ -234,7 +247,7 @@ export default function CalculatorScreen() {
   const unitOptions = [
     { key: "imperial", label: "Imperial", sub: "ft-in" },
     { key: "imperial-inches", label: "Inches", sub: "in" },
-    { key: "metric", label: "Metric mm", sub: "mm" },
+    { key: "metric", label: "Metric - mm", sub: "mm" },
     { key: "metric-cm", label: "Metric cm", sub: "cm" },
   ] as const;
 

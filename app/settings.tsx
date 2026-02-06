@@ -168,7 +168,7 @@ export default function SettingsScreen() {
         </Row>
         <Row label="Default units">
           <View className="flex-row gap-2">
-            {(["imperial", "imperial-inches", "metric"] as const).map((unit) => (
+            {(["imperial", "imperial-inches", "metric", "metric-cm"] as const).map((unit) => (
               <Pressable
                 key={unit}
                 onPress={() => dispatch({ type: "SET_SETTING", key: "unitSystem", val: unit })}
@@ -189,7 +189,9 @@ export default function SettingsScreen() {
                     ? "Imperial"
                     : unit === "imperial-inches"
                       ? "Inches"
-                      : "Metric"}
+                      : unit === "metric"
+                        ? "Metric - mm"
+                        : "Metric cm"}
                 </Text>
               </Pressable>
             ))}
