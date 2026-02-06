@@ -32,19 +32,33 @@ const Row = ({
   label,
   sub,
   children,
+  stacked = false,
 }: {
   label: string;
   sub?: string;
   children?: React.ReactNode;
+  stacked?: boolean;
 }) => (
-  <View className="flex-row items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
-    <View className="flex-1 pr-3">
+  <View
+    className={`border-b border-zinc-200 px-5 py-3 dark:border-zinc-800 ${
+      stacked ? "flex-col items-start gap-3" : "flex-row items-center justify-between"
+    }`}
+  >
+    <View
+      className={stacked ? "flex-row flex-wrap items-baseline gap-2" : "flex-1 pr-3"}
+    >
       <Text className="text-sm text-zinc-900 dark:text-zinc-100">{label}</Text>
       {sub && (
-        <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{sub}</Text>
+        <Text
+          className={`text-xs text-zinc-500 dark:text-zinc-400 ${
+            stacked ? "" : "mt-1"
+          }`}
+        >
+          {sub}
+        </Text>
       )}
     </View>
-    {children}
+    {stacked ? children && <View className="w-full">{children}</View> : children}
   </View>
 );
 
@@ -166,7 +180,7 @@ export default function SettingsScreen() {
             }
           />
         </Row>
-        <Row label="Default units">
+        <Row label="Default units" stacked>
           <View className="flex-row gap-2">
             {(["imperial", "imperial-inches", "metric", "metric-cm"] as const).map((unit) => (
               <Pressable
@@ -197,7 +211,11 @@ export default function SettingsScreen() {
             ))}
           </View>
         </Row>
-        <Row label="Fraction precision" sub="Results round to the nearest denominator">
+        <Row
+          label="Fraction precision"
+          sub="Results round to the nearest denominator"
+          stacked
+        >
           <View className="flex-row flex-wrap gap-2">
             {[2, 4, 8, 16, 32].map((val) => (
               <PrecisionButton
