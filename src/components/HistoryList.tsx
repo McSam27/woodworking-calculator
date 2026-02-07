@@ -168,7 +168,7 @@ export const HistoryList = ({
         </Text>
         <View className="mt-2 flex-row items-center justify-between">
           <Text className="font-mono text-xl font-semibold text-amber-600 dark:text-amber-400">
-            = {item.result}
+            {item.result}
           </Text>
           <View className="items-end">
             <View className="mb-1 rounded-full bg-zinc-200 px-2 py-0.5 dark:bg-zinc-800">

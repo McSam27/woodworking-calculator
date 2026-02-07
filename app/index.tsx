@@ -368,7 +368,7 @@ export default function CalculatorScreen() {
                         : "text-amber-600 dark:text-amber-400"
                     }`}
                   >
-                    = {state.result}
+                    {state.result}
                   </Text>
                 </View>
               )}

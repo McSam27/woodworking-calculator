@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   evaluateExpression,
-  formatResult,
+  formatResultWithRounding,
   toDecimal,
   type Fraction,
   type MetricUnit,
@@ -134,17 +134,18 @@ const reducer = (state: State, action: Action): State => {
       const frac = evaluation.value;
       const metricUnit: MetricUnit =
         state.settings.unitSystem === "metric-cm" ? "cm" : "mm";
-      const formatted = formatResult(
+      const formatted = formatResultWithRounding(
         frac,
         state.settings.unitSystem,
         state.settings.fractionPrecision,
         metricUnit
       );
+      const resultText = `${formatted.rounded ? "≈" : "="} ${formatted.text}`;
       const now = new Date().toISOString();
       const entry: CalculationRecord = {
         id: uuid(),
         expression: state.expr,
-        result: formatted,
+        result: resultText,
         resultRaw: toDecimal(frac),
         unitSystem: state.settings.unitSystem,
         inputUnit: deriveInputUnit(state.expr, state.settings.unitSystem),
@@ -156,7 +157,7 @@ const reducer = (state: State, action: Action): State => {
       if (state.settings.autoSave) {
         return {
           ...state,
-          result: formatted,
+          result: resultText,
           error: null,
           resultFrac: frac,
           history: [entry, ...state.history],
@@ -165,7 +166,7 @@ const reducer = (state: State, action: Action): State => {
       }
       return {
         ...state,
-        result: formatted,
+        result: resultText,
         error: null,
         resultFrac: frac,
         lastEntry: entry,

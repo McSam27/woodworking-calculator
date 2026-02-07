@@ -240,13 +240,18 @@ const snapToDenominator = (value: number, den: number) => {
   return { whole: wholeOut, num: num / g, den: den / g };
 };
 
-export const formatImperial = (frac: Fraction, precision: number) => {
+const formatImperialInternal = (
+  frac: Fraction,
+  precision: number
+): { text: string; rounded: boolean } => {
   const value = toDecimal(frac);
   const neg = value < 0;
   const abs = Math.abs(value);
   let feet = Math.floor(abs / INCHES_PER_FOOT);
   const inches = abs - feet * INCHES_PER_FOOT;
   let { whole, num, den } = snapToDenominator(inches, precision);
+  const snappedValue = feet * INCHES_PER_FOOT + whole + num / den;
+  const rounded = Math.abs(abs - snappedValue) > 1e-6;
 
   if (whole >= INCHES_PER_FOOT) {
     feet += 1;
@@ -260,20 +265,31 @@ export const formatImperial = (frac: Fraction, precision: number) => {
   else if (num > 0) parts.push(`${num}/${den}"`);
   else parts.push(`${whole}"`);
 
-  return `${sign}${parts.join(" ")}`.trim();
+  return { text: `${sign}${parts.join(" ")}`.trim(), rounded };
 };
 
-export const formatImperialInches = (frac: Fraction, precision: number) => {
+export const formatImperial = (frac: Fraction, precision: number) =>
+  formatImperialInternal(frac, precision).text;
+
+const formatImperialInchesInternal = (
+  frac: Fraction,
+  precision: number
+): { text: string; rounded: boolean } => {
   const value = toDecimal(frac);
   const neg = value < 0;
   const abs = Math.abs(value);
   const inches = abs;
   const { whole, num, den } = snapToDenominator(inches, precision);
+  const snappedValue = whole + num / den;
+  const rounded = Math.abs(abs - snappedValue) > 1e-6;
   const sign = neg ? "-" : "";
-  if (num > 0 && whole > 0) return `${sign}${whole}-${num}/${den}"`;
-  if (num > 0) return `${sign}${num}/${den}"`;
-  return `${sign}${whole}"`;
+  if (num > 0 && whole > 0) return { text: `${sign}${whole}-${num}/${den}"`, rounded };
+  if (num > 0) return { text: `${sign}${num}/${den}"`, rounded };
+  return { text: `${sign}${whole}"`, rounded };
 };
+
+export const formatImperialInches = (frac: Fraction, precision: number) =>
+  formatImperialInchesInternal(frac, precision).text;
 
 export const formatMetric = (
   frac: Fraction,
@@ -301,6 +317,30 @@ export const formatResult = (
     : unitSystem === "imperial-inches"
       ? formatImperialInches(frac, precision)
       : formatImperial(frac, precision);
+
+export const formatResultWithRounding = (
+  frac: Fraction,
+  unitSystem: UnitSystem,
+  precision: number,
+  metricUnit: MetricUnit = "mm"
+): { text: string; rounded: boolean } => {
+  if (unitSystem === "metric" || unitSystem === "metric-cm") {
+    const baseUnit = unitSystem === "metric-cm" ? "cm" : "mm";
+    const baseValue = toDecimal(frac);
+    const value =
+      baseUnit === metricUnit
+        ? baseValue
+        : baseUnit === "mm" && metricUnit === "cm"
+          ? baseValue / 10
+          : baseValue * 10;
+    const roundedValue = Number(value.toFixed(4));
+    return { text: `${formatDecimal(value, 4)} ${metricUnit}`, rounded: Math.abs(value - roundedValue) > 1e-6 };
+  }
+  if (unitSystem === "imperial-inches") {
+    return formatImperialInchesInternal(frac, precision);
+  }
+  return formatImperialInternal(frac, precision);
+};
 
 export const inchesToMm = (inches: number) => inches * MM_PER_INCH;
 export const mmToInches = (mm: number) => mm / MM_PER_INCH;
